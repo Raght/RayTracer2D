@@ -4,11 +4,14 @@
 #include "Math.h"
 
 
+enum class SurfaceType { REFLECTIVE, REFRACTIVE };
+
 struct Surface : public Line
 {
 	Surface();
 	Surface(olc::vd2d point1, olc::vd2d point2);
 	Surface(olc::vd2d point1, olc::vd2d point2, bool isReflective, bool isRefractive, float refractionIndex);
+	Surface(olc::vd2d point1, olc::vd2d point2, SurfaceType surfaceType, float refractionIndex);
 
 	//olc::vd2d PointMinX() const;
 	//olc::vd2d PointMaxX() const;

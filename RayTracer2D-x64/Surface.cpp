@@ -1,6 +1,9 @@
 #include "Surface.h"
 
 
+
+
+
 Surface::Surface()
 	: Line()
 {
@@ -16,16 +19,30 @@ Surface::Surface(olc::vd2d point1, olc::vd2d point2)
 	p2 = point2;
 }
 
-Surface::Surface(olc::vd2d point1, olc::vd2d point2, bool isReflective, bool isRefractive, float refractionIndex)
+Surface::Surface(olc::vd2d point1, olc::vd2d point2, bool isReflective, bool isRefractive, float refractiveIndex)
 	: Surface(point1, point2)
 {
-	p1 = point1;
-	p2 = point2;
 	this->is_reflective = isReflective;
 	this->is_refractive = isRefractive;
-	this->refractive_index = refractionIndex;
+	this->refractive_index = refractiveIndex;
 }
 
+Surface::Surface(olc::vd2d point1, olc::vd2d point2, SurfaceType surfaceType, float refractiveIndex)
+	: Surface(point1, point2)
+{
+	if (surfaceType == SurfaceType::REFLECTIVE)
+	{
+		is_reflective = true;
+		is_refractive = false;
+	}
+	else if (surfaceType == SurfaceType::REFRACTIVE)
+	{
+		is_reflective = false;
+		is_refractive = true;
+	}
+
+	refractive_index = refractiveIndex;
+}
 //olc::vd2d& Surface::PointMinX() const
 //{
 //	return (p1.x < p2.x) ? p1 : p2;

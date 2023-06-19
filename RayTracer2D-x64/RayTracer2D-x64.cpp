@@ -101,7 +101,7 @@ private:
 	{
 		DrawLine(ToScreenSpace(point),
 			ToScreenSpace(point + UI_scale / view_scale * surface_normal_length * surface.Normal(ray.direction)),
-			olc::YELLOW);
+			surface_normal_color);
 
 	}
 
@@ -138,10 +138,6 @@ private:
 		DrawString(pos, text, color, UI_scale);
 	}
 
-	enum SurfaceType { SURFACE_REFLECTIVE = 0, SURFACE_REFRACTIVE = 1 };
-	int surface_types_count = 2;
-
-
 	bool debug_mode = false;
 	
 	
@@ -149,12 +145,10 @@ private:
 	vector<Surface> surfaces;
 
 
-	SurfaceType surface_type = SURFACE_REFLECTIVE;
+	SurfaceType surface_type = SurfaceType::REFLECTIVE;
 	Surface surface_in_construction;
 	olc::vd2d position_pressed;
 	bool is_constructing;
-	bool is_reflective = true;
-	bool is_refractive = !is_reflective;
 	double refractive_index = 1.5;
 	double refractive_index_step = 0.1;
 
@@ -251,7 +245,7 @@ public:
 			}
 		}
 
-		surface_in_construction = Surface(position_pressed, ToWorldSpace(GetMousePosition()), is_reflective, is_refractive, refractive_index);
+		surface_in_construction = Surface(position_pressed, ToWorldSpace(GetMousePosition()), surface_type, refractive_index);
 
 		if (GetMouse(0).bPressed)
 		{
@@ -293,23 +287,15 @@ public:
 		{
 			if (GetMouse(1).bPressed)
 			{
-				surface_type = SurfaceType((surface_type + 1) % surface_types_count);
-
-				if (surface_type == SURFACE_REFLECTIVE)
-				{
-					is_reflective = true;
-					is_refractive = false;
-				}
-				else if (surface_type == SURFACE_REFRACTIVE)
-				{
-					is_reflective = false;
-					is_refractive = true;
-				}
+				if (surface_type == SurfaceType::REFLECTIVE)
+					surface_type = SurfaceType::REFRACTIVE;
+				else if (surface_type == SurfaceType::REFRACTIVE)
+					surface_type = SurfaceType::REFLECTIVE;
 			}
 
 			DrawSurface(surface_in_construction);
 
-			if (is_refractive)
+			if (surface_type == SurfaceType::REFRACTIVE)
 			{
 				if (GetKey(olc::DOWN).bPressed || GetKey(olc::LEFT).bPressed)
 					refractive_index -= refractive_index_step;
@@ -502,11 +488,11 @@ public:
 
 		if (is_constructing)
 		{
-			if (is_reflective)
+			if (surface_type == SurfaceType::REFLECTIVE)
 			{
 				DrawStringUpRightCorner(olc::vi2d{ ScreenWidth(), 0 }, "REFLECTIVE (S)URFACE", reflective_surface_color);
 			}
-			else if (is_refractive)
+			else if (surface_type == SurfaceType::REFRACTIVE)
 			{
 				DrawStringUpRightCorner(olc::vi2d{ ScreenWidth(), 0 }, "REFRACTIVE (S)URFACE", refractive_surface_color);
 				DrawStringUpRightCorner(olc::vi2d{ ScreenWidth(), 8 * UI_scale }, to_string(refractive_index), refractive_surface_color);
