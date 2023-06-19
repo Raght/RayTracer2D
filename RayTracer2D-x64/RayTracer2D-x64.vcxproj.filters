@@ -50,7 +50,7 @@
     <ClCompile Include="Ray.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="RayTracer2D double.cpp">
+    <ClCompile Include="RayTracer2D-x64.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="Surface.cpp">
