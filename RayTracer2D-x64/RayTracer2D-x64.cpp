@@ -138,6 +138,7 @@ private:
 		DrawString(pos, text, color, UI_scale);
 	}
 
+
 	bool debug_mode = false;
 	
 	
@@ -148,9 +149,12 @@ private:
 	SurfaceType surface_type = SurfaceType::REFLECTIVE;
 	Surface surface_in_construction;
 	olc::vd2d position_pressed;
+	bool first_point_constructed;
 	bool is_constructing;
 	double refractive_index = 1.5;
-	double refractive_index_step = 0.1;
+	double nearest_point_snap_radius = 8;
+	olc::vd2d last_point_constructed;
+	
 
 	bool hit_corner = false;
 	olc::vd2d corner_position;
@@ -166,6 +170,8 @@ private:
 	double ms_per_ray_increase = 1.0 / rays_per_second;
 	double timer = 0.0;
 
+	double refractive_index_step = 0.1;
+
 
 	int UI_scale;
 	double view_scale = 1;
@@ -173,14 +179,17 @@ private:
 	bool full_brightness = false;
 	bool draw_normals = true;
 
+	double point_radius = 2;
 	olc::Pixel ray_origin_color = olc::RED;
 	double inner_circle_origin_radius = 2;
 	double outer_circle_origin_radius = 4;
 	olc::Pixel ray_color = olc::Pixel(255, 89, 192);
-	olc::Pixel cutting_surface_color = olc::RED;
-	olc::Pixel surface_to_be_removed_color = olc::DARK_RED;
 	olc::Pixel reflective_surface_color = olc::WHITE;
 	olc::Pixel refractive_surface_color = olc::CYAN;
+	olc::Pixel nearest_point_snap_point_color = olc::MAGENTA;
+	olc::Pixel nearest_point_snap_circle_color = olc::MAGENTA;
+	olc::Pixel cutting_surface_color = olc::RED;
+	olc::Pixel surface_to_be_removed_color = olc::DARK_RED;
 	olc::Pixel UI_text_color = olc::WHITE;
 	olc::Pixel UI_error_text_color = olc::RED;
 	olc::Pixel UI_switch_state_on_color = olc::GREEN;
@@ -218,6 +227,7 @@ public:
 		if (GetKey(olc::S).bPressed && !is_cutting)
 		{
 			is_constructing = !is_constructing;
+			first_point_constructed = false;
 
 			position_pressed = ToWorldSpace(GetMousePosition());
 		}
@@ -246,6 +256,59 @@ public:
 		}
 
 		surface_in_construction = Surface(position_pressed, ToWorldSpace(GetMousePosition()), surface_type, refractive_index);
+		
+		if (is_constructing)
+		{
+			vector<olc::vd2d> nearest_points;
+			for (Surface& surface : surfaces)
+			{
+				if ((surface.p1 - ToWorldSpace(GetMousePosition())).mag2() < nearest_point_snap_radius * nearest_point_snap_radius)
+					nearest_points.push_back(surface.p1);
+				else if ((surface.p2 - ToWorldSpace(GetMousePosition())).mag2() < nearest_point_snap_radius * nearest_point_snap_radius)
+					nearest_points.push_back(surface.p2);
+			}
+
+			if (nearest_points.size() > 0)
+			{
+				sort(nearest_points.begin(), nearest_points.end(), 
+					[world_mouse_position = ToWorldSpace(GetMousePosition())](olc::vd2d& p1, olc::vd2d& p2)
+					{
+						return (p1 - world_mouse_position).mag2() < (p2 - world_mouse_position).mag2();
+					});
+
+				olc::vd2d nearest_point;
+				bool nearest_point_found = false;
+				if (!first_point_constructed)
+				{
+					nearest_point = nearest_points[0];
+					nearest_point_found = true;
+					surface_in_construction.p1 = nearest_point;
+				}
+				else
+				{
+					if (nearest_points[0] != surface_in_construction.p1)
+					{
+						nearest_point = nearest_points[0];
+						nearest_point_found = true;
+					}
+					else if (nearest_points.size() > 1)
+					{
+						nearest_point = nearest_points[1];
+						nearest_point_found = true;
+					}
+
+					if (nearest_point_found)
+						surface_in_construction.p2 = nearest_point;
+				}
+				
+				if (nearest_point_found)
+				{
+					FillCircle(ToScreenSpace(surface_in_construction.p2), point_radius, nearest_point_snap_point_color);
+					DrawCircle(ToScreenSpace(surface_in_construction.p2), nearest_point_snap_radius, nearest_point_snap_circle_color);
+				}				
+			}
+			
+		}
 
 		if (GetMouse(0).bPressed)
 		{
@@ -253,6 +316,10 @@ public:
 			
 			if (is_constructing)
 			{
+				if (!first_point_constructed)
+				{
+
+				}
 				surface_in_construction.Extend(2 * EPSILON);
 				surfaces.push_back(surface_in_construction);
 			}
