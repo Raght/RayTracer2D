@@ -14,22 +14,22 @@ struct Ray
 
 	bool InsideSurface() const;
 
-	void MoveOriginBack(float length)
+	void MoveOriginBack(double length)
 	{
 		origin -= length * direction;
 	}
 
 	Ray();
-	Ray(olc::vd2d origin, olc::vd2d direction, float distance);
-	Ray(olc::vd2d origin, olc::vd2d direction, float distance, olc::Pixel color, float brightness);
-	Ray(olc::vd2d origin, olc::vd2d direction, float distance, olc::Pixel color, float brightness, float refractive_index);
+	Ray(olc::vd2d origin, olc::vd2d direction, double distance);
+	Ray(olc::vd2d origin, olc::vd2d direction, double distance, olc::Pixel color, double brightness);
+	Ray(olc::vd2d origin, olc::vd2d direction, double distance, olc::Pixel color, double brightness, double refractive_index);
 
 	olc::vd2d origin;
 	olc::vd2d direction;
-	float distance;
+	double distance;
 
 	olc::Pixel color_max_brightness;
-	float brightness;
+	double brightness;
 
-	float refractive_index;
+	double refractive_index;
 };

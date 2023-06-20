@@ -72,6 +72,11 @@ private:
 		return olc::vd2d((double)GetMouseX(), (double)GetMouseY());
 	}
 
+	olc::vd2d GetWorldMousePosition()
+	{
+		return ToWorldSpace(GetMousePosition());
+	}
+
 	olc::vi2d ToScreenSpace(const olc::vd2d& world_position)
 	{
 		olc::vd2d screen_position = { world_position.x * view_scale, (double)ScreenHeight() - world_position.y * view_scale };
@@ -138,6 +143,18 @@ private:
 		DrawString(pos, text, color, UI_scale);
 	}
 
+	void ExitConstructing()
+	{
+		is_constructing = false;
+		first_point_constructed = false;
+	}
+
+	void ExitCutting()
+	{
+		is_cutting = false;
+		cutting_surface_first_point_set = false;
+	}
+
 
 	bool debug_mode = false;
 	
@@ -148,13 +165,14 @@ private:
 
 	SurfaceType surface_type = SurfaceType::REFLECTIVE;
 	Surface surface_in_construction;
-	olc::vd2d position_pressed;
 	bool first_point_constructed;
 	bool is_constructing;
 	double refractive_index = 1.5;
 	double nearest_point_snap_radius = 8;
-	olc::vd2d last_point_constructed;
-	
+	olc::vd2d nearest_point;
+	bool nearest_point_found;
+	olc::vd2d point_to_construct;
+	//unordered_map<olc::vd2d, Surface&>
 
 	bool hit_corner = false;
 	olc::vd2d corner_position;
@@ -217,31 +235,28 @@ public:
 		Clear(olc::BLACK);
 
 		// Controlling the first ray
-		light_ray.direction = olc::vd2d(ToWorldSpace(GetMousePosition()) - light_ray.origin).norm();
+		light_ray.direction = olc::vd2d(GetWorldMousePosition() - light_ray.origin).norm();
 
 
 		if (GetMouse(2).bPressed || GetKey(olc::ESCAPE).bPressed)
 		{
-			is_constructing = false;
+			ExitConstructing();
+			ExitCutting();
 		}
 		if (GetKey(olc::S).bPressed && !is_cutting)
 		{
 			is_constructing = !is_constructing;
 			first_point_constructed = false;
-
-			position_pressed = ToWorldSpace(GetMousePosition());
 		}
 		if (GetKey(olc::R).bPressed && !is_constructing)
 		{
 			if (is_cutting)
-				cutting_surface_first_point_set = false;
-
-			is_cutting = !is_cutting;
+				ExitCutting();
+			else
+				is_cutting = true;
 		}
 
-		cutting_surface.p2 = ToWorldSpace(GetMousePosition());
-		if (is_cutting && cutting_surface_first_point_set)
-			DrawLine(ToScreenSpace(cutting_surface.p1), ToScreenSpace(cutting_surface.p2), cutting_surface_color);
+		cutting_surface.p2 = GetWorldMousePosition();
 
 		surfaces_to_remove.clear();
 		if (is_cutting)
@@ -255,29 +270,28 @@ public:
 			}
 		}
 
-		surface_in_construction = Surface(position_pressed, ToWorldSpace(GetMousePosition()), surface_type, refractive_index);
+		surface_in_construction = Surface(surface_in_construction.p1, GetWorldMousePosition(), surface_type, refractive_index);
 		
+		nearest_point_found = false;
 		if (is_constructing)
 		{
 			vector<olc::vd2d> nearest_points;
 			for (Surface& surface : surfaces)
 			{
-				if ((surface.p1 - ToWorldSpace(GetMousePosition())).mag2() < nearest_point_snap_radius * nearest_point_snap_radius)
+				if ((surface.p1 - GetWorldMousePosition()).mag2() < nearest_point_snap_radius * nearest_point_snap_radius)
 					nearest_points.push_back(surface.p1);
-				else if ((surface.p2 - ToWorldSpace(GetMousePosition())).mag2() < nearest_point_snap_radius * nearest_point_snap_radius)
+				else if ((surface.p2 - GetWorldMousePosition()).mag2() < nearest_point_snap_radius * nearest_point_snap_radius)
 					nearest_points.push_back(surface.p2);
 			}
 
 			if (nearest_points.size() > 0)
 			{
 				sort(nearest_points.begin(), nearest_points.end(), 
-					[world_mouse_position = ToWorldSpace(GetMousePosition())](olc::vd2d& p1, olc::vd2d& p2)
+					[world_mouse_position = GetWorldMousePosition()](olc::vd2d& p1, olc::vd2d& p2)
 					{
 						return (p1 - world_mouse_position).mag2() < (p2 - world_mouse_position).mag2();
 					});
 
-				olc::vd2d nearest_point;
-				bool nearest_point_found = false;
 				if (!first_point_constructed)
 				{
 					nearest_point = nearest_points[0];
@@ -286,72 +300,62 @@ public:
 				}
 				else
 				{
-					if (nearest_points[0] != surface_in_construction.p1)
+					for (int i = 0; i < nearest_points.size(); i++)
 					{
-						nearest_point = nearest_points[0];
-						nearest_point_found = true;
-					}
-					else if (nearest_points.size() > 1)
-					{
-						nearest_point = nearest_points[1];
-						nearest_point_found = true;
-					}
+						if (nearest_points[i] != surface_in_construction.p1)
+						{
+							nearest_point = nearest_points[i];
+							nearest_point_found = true;
 
-					if (nearest_point_found)
-						surface_in_construction.p2 = nearest_point;
-				}
-				
-				if (nearest_point_found)
-				{
-					FillCircle(ToScreenSpace(surface_in_construction.p2), point_radius, nearest_point_snap_point_color);
-					DrawCircle(ToScreenSpace(surface_in_construction.p2), nearest_point_snap_radius, nearest_point_snap_circle_color);
-				}				
+							for (Surface& surface : surfaces)
+							{
+								if (surface == Surface(nearest_points[i], surface_in_construction.p1))
+								{
+									nearest_point_found = false;
+									break;
+								}
+							}
+						}
+					}
+				}	
 			}
-			
 		}
 
-		if (GetMouse(0).bPressed)
+		if (GetMouse(0).bPressed && !is_cutting)
 		{
-			position_pressed = ToWorldSpace(GetMousePosition());
-			
-			if (is_constructing)
-			{
-				if (!first_point_constructed)
-				{
-
-				}
-				surface_in_construction.Extend(2 * EPSILON);
-				surfaces.push_back(surface_in_construction);
-			}
-
-			if (!is_cutting)
-				is_constructing = true;
-
-			if (is_cutting)
-			{
-				if (cutting_surface_first_point_set)
-				{
-					cutting_surface.p2 = ToWorldSpace(GetMousePosition());
-
-					int surfaces_removed = 0;
-					for (int i = 0; i < surfaces_to_remove.size(); i++)
-					{
-						surfaces.erase(surfaces.begin() + surfaces_to_remove[i] - surfaces_removed);
-
-						surfaces_removed++;
-					}
-				}
-				else
-				{
-					cutting_surface = Surface(position_pressed, ToWorldSpace(GetMousePosition()));
-				}
-
-				cutting_surface_first_point_set = !cutting_surface_first_point_set;
-			}
+			is_constructing = true;
 		}
 
 		if (is_constructing)
 		{
+			if (nearest_point_found)
+				point_to_construct = nearest_point;
+			else
+				point_to_construct = GetWorldMousePosition();
+
+			if (first_point_constructed)
+				surface_in_construction.p2 = point_to_construct;
+
+			surface_in_construction = Surface(surface_in_construction.p1, surface_in_construction.p2, surface_type, refractive_index);
+
+			if (GetMouse(0).bPressed)
+			{
+				if (!first_point_constructed)
+				{
+					surface_in_construction.p1 = point_to_construct;
+					first_point_constructed = true;
+				}
+				else
+				{
+					if (nearest_point_found)
+						first_point_constructed = false;
+					
+					surface_in_construction.extension = 2 * EPSILON;
+					surfaces.push_back(surface_in_construction);
+					surface_in_construction.p1 = surface_in_construction.p2;
+				}
+			}
+
 			if (GetMouse(1).bPressed)
 			{
 				if (surface_type == SurfaceType::REFLECTIVE)
@@ -359,9 +363,34 @@ public:
 				else if (surface_type == SurfaceType::REFRACTIVE)
 					surface_type = SurfaceType::REFLECTIVE;
 			}
+		}
 
-			DrawSurface(surface_in_construction);
+		if (is_cutting && GetMouse(0).bPressed)
+		{
+			if (cutting_surface_first_point_set)
+			{
+				cutting_surface.p2 = GetWorldMousePosition();
 
+				int surfaces_removed = 0;
+				for (int i = 0; i < surfaces_to_remove.size(); i++)
+				{
+					surfaces.erase(surfaces.begin() + surfaces_to_remove[i] - surfaces_removed);
+
+					surfaces_removed++;
+				}
+			}
+			else
+			{
+				cutting_surface = Surface(GetWorldMousePosition(), GetWorldMousePosition());
+			}
+
+			cutting_surface_first_point_set = !cutting_surface_first_point_set;
+			
+		}
+		
+
+		if (is_constructing)
+		{
 			if (surface_type == SurfaceType::REFRACTIVE)
 			{
 				if (GetKey(olc::DOWN).bPressed || GetKey(olc::LEFT).bPressed)
@@ -393,7 +422,7 @@ public:
 
 
 			if (GetMouse(1).bPressed)
-				light_ray.origin = ToWorldSpace(GetMousePosition());
+				light_ray.origin = GetWorldMousePosition();
 		}
 
 		if (GetKey(olc::C).bPressed)
@@ -522,14 +551,23 @@ public:
 			}
 		}
 
+		if (first_point_constructed)
+			DrawSurface(surface_in_construction);
+
+		if (nearest_point_found)
+		{
+			FillCircle(ToScreenSpace(point_to_construct), point_radius, nearest_point_snap_point_color);
+			DrawCircle(ToScreenSpace(point_to_construct), nearest_point_snap_radius, nearest_point_snap_circle_color);
+		}
+
 		if (is_cutting && cutting_surface_first_point_set)
 		{
 			for (int i : surfaces_to_remove)
 			{
 				DrawLine(ToScreenSpace(surfaces[i].p1), ToScreenSpace(surfaces[i].p2), surface_to_be_removed_color);
 			}
+			DrawLine(ToScreenSpace(cutting_surface.p1), ToScreenSpace(cutting_surface.p2), cutting_surface_color);
 		}
-
 
 		FillCircle(ToScreenSpace(light_ray.origin), inner_circle_origin_radius* UI_scale, ray_origin_color);
 		DrawCircle(ToScreenSpace(light_ray.origin), outer_circle_origin_radius* UI_scale, ray_origin_color);

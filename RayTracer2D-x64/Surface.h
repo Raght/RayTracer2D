@@ -10,8 +10,8 @@ struct Surface : public Line
 {
 	Surface();
 	Surface(olc::vd2d point1, olc::vd2d point2);
-	Surface(olc::vd2d point1, olc::vd2d point2, bool isReflective, bool isRefractive, float refractionIndex);
-	Surface(olc::vd2d point1, olc::vd2d point2, SurfaceType surfaceType, float refractionIndex);
+	Surface(olc::vd2d point1, olc::vd2d point2, bool isReflective, bool isRefractive, double refractiveIndex);
+	Surface(olc::vd2d point1, olc::vd2d point2, SurfaceType surfaceType, double refractiveIndex);
 
 	//olc::vd2d PointMinX() const;
 	//olc::vd2d PointMaxX() const;
@@ -19,11 +19,14 @@ struct Surface : public Line
 	//olc::vd2d PointMaxY() const;
 
 	void Extend(double length);
+	Surface Extended(double length) const;
 
 	bool ContainsPoint(olc::vd2d point);
 
 
 	bool is_reflective;
 	bool is_refractive;
-	float refractive_index;
+	double refractive_index;
+
+	double extension = 0;
 };

@@ -35,7 +35,7 @@ Ray::Ray()
 	refractive_index = 1;
 }
 
-Ray::Ray(olc::vd2d origin, olc::vd2d direction, float distance)
+Ray::Ray(olc::vd2d origin, olc::vd2d direction, double distance)
 	: Ray()
 {
 	this->origin = origin;
@@ -43,14 +43,14 @@ Ray::Ray(olc::vd2d origin, olc::vd2d direction, float distance)
 	this->distance = distance;
 }
 
-Ray::Ray(olc::vd2d origin, olc::vd2d direction, float distance, olc::Pixel color, float brightness)
+Ray::Ray(olc::vd2d origin, olc::vd2d direction, double distance, olc::Pixel color, double brightness)
 	: Ray(origin, direction, distance)
 {
 	this->color_max_brightness = color;
 	this->brightness = brightness;
 }
 
-Ray::Ray(olc::vd2d origin, olc::vd2d direction, float distance, olc::Pixel color, float brightness, float refractive_index)
+Ray::Ray(olc::vd2d origin, olc::vd2d direction, double distance, olc::Pixel color, double brightness, double refractive_index)
 	: Ray(origin, direction, distance, color, brightness)
 {
 	this->refractive_index = refractive_index;

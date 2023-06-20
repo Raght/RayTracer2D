@@ -176,7 +176,7 @@ CollisionInfo LineVsSurface(const Line& line, const Surface& surface, olc::vd2d&
 		return collision_info;
 	}
 
-	bool point_lies_on_surface = (intersectionPoint - surface.p1).dot(intersectionPoint - surface.p2) < 0.0;
+	bool point_lies_on_surface = (intersectionPoint - surface.Extended(surface.extension).p1).dot(intersectionPoint - surface.p2) < 0.0;
 
 	if (collision_info.intersect && point_lies_on_surface)
 	{
@@ -195,8 +195,10 @@ CollisionInfo SurfaceVsSurface(const Surface& surface1, const Surface& surface2,
 		return collision_info;
 	}
 
-	bool point_lies_on_surface1 = (intersectionPoint - surface1.p1).dot(intersectionPoint - surface1.p2) < 0.0;
-	bool point_lies_on_surface2 = (intersectionPoint - surface2.p1).dot(intersectionPoint - surface2.p2) < 0.0;
+	Surface extended_surface1 = surface1.Extended(surface1.extension);
+	Surface extended_surface2 = surface2.Extended(surface2.extension);
+	bool point_lies_on_surface1 = (intersectionPoint - extended_surface1.p1).dot(intersectionPoint - extended_surface1.p2) < 0.0;
+	bool point_lies_on_surface2 = (intersectionPoint - extended_surface2.p1).dot(intersectionPoint - extended_surface2.p2) < 0.0;
 
 	if (collision_info.intersect && point_lies_on_surface1 && point_lies_on_surface2)
 	{
