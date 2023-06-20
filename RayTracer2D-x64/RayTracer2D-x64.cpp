@@ -240,7 +240,11 @@ public:
 
 		if (GetMouse(2).bPressed || GetKey(olc::ESCAPE).bPressed)
 		{
-			ExitConstructing();
+			if (first_point_constructed)
+				first_point_constructed = false;
+			else
+				ExitConstructing();
+			
 			ExitCutting();
 		}
 		if (GetKey(olc::S).bPressed && !is_cutting)
@@ -314,6 +318,11 @@ public:
 									nearest_point_found = false;
 									break;
 								}
+							}
+
+							if (nearest_point_found)
+							{
+								break;
 							}
 						}
 					}
