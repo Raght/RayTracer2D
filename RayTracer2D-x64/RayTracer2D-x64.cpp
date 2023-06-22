@@ -440,7 +440,9 @@ public:
 		{
 			surfaces.clear();
 			is_constructing = false;
+			first_point_constructed = false;
 			is_cutting = false;
+			is_cutting_during_construction = false;
 			cutting_surface_first_point_set = false;
 		}
 			
