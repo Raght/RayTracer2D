@@ -161,26 +161,25 @@ private:
 	
 	Ray light_ray;
 	vector<Surface> surfaces;
-
-
-	SurfaceType surface_type = SurfaceType::REFLECTIVE;
-	Surface surface_in_construction;
-	bool first_point_constructed;
-	bool is_constructing;
-	double refractive_index = 1.5;
-	double nearest_point_snap_radius = 8;
-	olc::vd2d nearest_point;
-	bool nearest_point_found;
-	olc::vd2d point_to_construct;
-	//unordered_map<olc::vd2d, Surface&>
-
 	bool hit_corner = false;
 	olc::vd2d corner_position;
 
 
+	SurfaceType surface_type = SurfaceType::REFLECTIVE;
+	Surface surface_in_construction;
+	bool first_point_constructed = false;
+	bool is_constructing =false;
+	double refractive_index = 1.5;
+	double nearest_point_snap_radius = 8;
+	olc::vd2d nearest_point;
+	olc::vd2d point_to_construct;
+	//unordered_map<olc::vd2d, Surface&>
+
+
 	Surface cutting_surface;
-	bool is_cutting;
-	bool cutting_surface_first_point_set;
+	bool is_cutting = false;
+	bool is_cutting_during_construction = false;
+	bool cutting_surface_first_point_set = false;
 	vector<int> surfaces_to_remove;
 
 
@@ -252,12 +251,15 @@ public:
 			is_constructing = !is_constructing;
 			first_point_constructed = false;
 		}
-		if (GetKey(olc::R).bPressed && !is_constructing)
+		if (GetKey(olc::R).bPressed)
 		{
 			if (is_cutting)
 				ExitCutting();
 			else
 				is_cutting = true;
+
+			if (is_constructing)
+				is_cutting_during_construction = !is_cutting_during_construction;
 		}
 
 		cutting_surface.p2 = GetWorldMousePosition();
@@ -276,8 +278,8 @@ public:
 
 		surface_in_construction = Surface(surface_in_construction.p1, GetWorldMousePosition(), surface_type, refractive_index);
 		
-		nearest_point_found = false;
-		if (is_constructing)
+		bool nearest_point_found = false;
+		if (is_constructing && !is_cutting_during_construction)
 		{
 			vector<olc::vd2d> nearest_points;
 			for (Surface& surface : surfaces)
@@ -335,7 +337,7 @@ public:
 			is_constructing = true;
 		}
 
-		if (is_constructing)
+		if (is_constructing && !is_cutting_during_construction)
 		{
 			if (nearest_point_found)
 				point_to_construct = nearest_point;
@@ -398,7 +400,7 @@ public:
 		}
 		
 
-		if (is_constructing)
+		if (is_constructing && !is_cutting_during_construction)
 		{
 			if (surface_type == SurfaceType::REFRACTIVE)
 			{
@@ -410,7 +412,7 @@ public:
 				refractive_index = Cap(refractive_index, 1.0, 999.0);
 			}
 		}
-		else
+		else if (!is_cutting_during_construction)
 		{
 			timer += fElapsedTime;
 			if (timer >= ms_per_ray_increase)
@@ -545,7 +547,7 @@ public:
 			}
 		}
 
-		if (first_point_constructed)
+		if (first_point_constructed && !is_cutting_during_construction)
 			DrawSurface(surface_in_construction);
 
 		if (nearest_point_found)
