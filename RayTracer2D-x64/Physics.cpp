@@ -15,6 +15,18 @@ CollisionInfo::CollisionInfo(bool intersect, bool coincide)
 	this->coincide = coincide;
 }
 
+ScatterInfo::ScatterInfo()
+{
+	reflected = false;
+	refracted = false;
+}
+
+ScatterInfo::ScatterInfo(bool reflected, bool refracted)
+{
+	this->reflected = reflected;
+	this->refracted = refracted;
+}
+
 CollisionInfo LineVsLine(Line line1, Line line2, olc::vd2d& intersectionPoint)
 {
 	if (line1.p1.x > line1.p2.x)
@@ -282,4 +294,26 @@ bool TryRefractRay(const Ray& ray, const Surface& surface, const olc::vd2d& inte
 	refractedRay.refractive_index = n2;
 
 	return true;
+}
+
+ScatterInfo ScatterRay(const Ray& ray, const Surface& surface,
+	const olc::vd2d& intersectionPoint, Ray& scatteredRay)
+{
+	ScatterInfo scatter_info = ScatterInfo();
+	if (surface.is_reflective)
+	{
+		scatteredRay = ReflectRay(ray, surface, intersectionPoint);
+		scatter_info.reflected = true;
+	}
+	else if (surface.is_refractive)
+	{
+		if (!TryRefractRay(ray, surface, intersectionPoint, scatteredRay))
+		{
+			scatteredRay = ReflectRay(ray, surface, intersectionPoint);
+			scatter_info.reflected = true;
+		}
+		scatter_info.refracted = true;
+	}
+
+	return scatter_info;
 }

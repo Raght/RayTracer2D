@@ -445,7 +445,7 @@ public:
 
 		Ray first_ray = light_ray;
 		Ray second_ray = first_ray;
-		Surface surface_that_reflected_ray = Surface(olc::vd2d(~0, ~0), olc::vd2d(~0, ~0));
+		Surface nearest_surface = Surface(olc::vd2d(~0, ~0), olc::vd2d(~0, ~0));
 		hit_corner = false;
 		if (!is_constructing && !is_cutting)
 		{
@@ -457,7 +457,7 @@ public:
 				{
 					olc::vd2d intersection_point;
 					CollisionInfo collision_info = RayVsSurface(first_ray, surface, intersection_point);
-					if ((collision_info.intersect || collision_info.coincide) && surface_that_reflected_ray != surface)
+					if ((collision_info.intersect || collision_info.coincide) && nearest_surface != surface)
 					{
 						intersections_and_surfaces.push_back({ intersection_point, surface });
 					}
@@ -485,7 +485,7 @@ public:
 				}
 
 				olc::vd2d intersection_point = intersections_and_surfaces[0].point;
-				surface_that_reflected_ray = intersections_and_surfaces[0].surface;
+				nearest_surface = intersections_and_surfaces[0].surface;
 
 				DrawRay(first_ray, intersection_point);
 
@@ -506,36 +506,21 @@ public:
 					corner_position = closest.point;
 					break;
 				}
+				
 
-
-				if (surface_that_reflected_ray.is_reflective)
-				{
-					second_ray = ReflectRay(first_ray, surface_that_reflected_ray, intersection_point);
-
-				}
-				else if (surface_that_reflected_ray.is_refractive)
-				{
-					if (!TryRefractRay(first_ray, surface_that_reflected_ray, intersection_point, second_ray))
-					{
-						second_ray = ReflectRay(first_ray, surface_that_reflected_ray, intersection_point);
-						second_ray.refractive_index = first_ray.refractive_index;
-
-					}
-					else if (draw_normals)
-					{
-						DrawNormal(intersection_point, surface_that_reflected_ray, first_ray.OppositeRay());
-					}
-				}
+				ScatterInfo scatter_info = ScatterRay(first_ray, nearest_surface, intersection_point, second_ray);
 
 				if (!full_brightness)
-				{
 					second_ray.brightness -= 1.0 / rays_simulated;
-				}
 
 				if (draw_normals && i != rays_simulated - 1)
 				{
-					DrawNormal(intersection_point, surface_that_reflected_ray, first_ray);
+					DrawNormal(intersection_point, nearest_surface, first_ray);
+
+					if (nearest_surface.is_refractive && scatter_info.reflected)
+						DrawNormal(intersection_point, nearest_surface, first_ray.OppositeRay());
 				}
+
 
 				first_ray = second_ray;
 			}
