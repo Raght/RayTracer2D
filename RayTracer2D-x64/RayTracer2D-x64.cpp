@@ -555,8 +555,8 @@ public:
 			DrawLine(ToScreenSpace(cutting_surface.p1), ToScreenSpace(cutting_surface.p2), cutting_surface_color);
 		}
 
-		FillCircle(ToScreenSpace(light_ray.origin), inner_circle_origin_radius* UI_scale, ray_origin_color);
-		DrawCircle(ToScreenSpace(light_ray.origin), outer_circle_origin_radius* UI_scale, ray_origin_color);
+		FillCircle(ToScreenSpace(light_ray.origin), inner_circle_origin_radius * UI_scale, ray_origin_color);
+		DrawCircle(ToScreenSpace(light_ray.origin), outer_circle_origin_radius * UI_scale, ray_origin_color);
 
 
 		// Draw UI
@@ -600,7 +600,7 @@ public:
 			DrawStringBottomRightCorner(olc::vi2d{ ScreenWidth(), ScreenHeight() }, "HIDE (N)ORMALS", UI_switch_state_off_color);
 
 		if (hit_corner)
-			DrawStringUpLeftCorner(ToScreenSpace(corner_position), "HIT CORNER", UI_error_text_color);
+			DrawStringBottomLeftCorner(ToScreenSpace(corner_position), "HIT CORNER", UI_error_text_color);
 
 		
 		return true;
