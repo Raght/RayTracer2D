@@ -207,3 +207,9 @@ CollisionInfo RayVsSurface(const Ray& ray, const Surface& surface, olc::vd2d& in
 {
 	return SurfaceVsSurface(Surface(ray.origin, ray.EndPoint()), surface, intersectionPoint);
 }
+
+bool PointVsRect(olc::vd2d point, olc::vd2d rectangle_position, olc::vd2d rectangle_size)
+{
+	return rectangle_position.x <= point.x && point.x <= rectangle_position.x + rectangle_size.x &&
+		rectangle_position.y <= point.y && point.y <= rectangle_position.y + rectangle_size.y;
+}

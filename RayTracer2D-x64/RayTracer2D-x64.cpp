@@ -15,10 +15,6 @@
 using namespace std;
 
 
-
-// ======= STRUCTS =======
-
-
 struct PointAndSurface
 {
 	olc::vd2d point;
@@ -36,29 +32,10 @@ struct Shape
 };
 
 
-// ======= FUNCTIONS =======
-
-
-bool PointVsRect(olc::vd2d point, olc::vd2d rectangle_position, olc::vd2d rectangle_size)
-{
-	return rectangle_position.x <= point.x && point.x <= rectangle_position.x + rectangle_size.x &&
-		   rectangle_position.y <= point.y && point.y <= rectangle_position.y + rectangle_size.y;
-}
-
-bool PointVsRectPrint(olc::vd2d p, olc::vd2d pos, olc::vd2d size)
-{
-	cout << pos.x << " <= " << p.x << " && " << p.x << " <= " << pos.x + size.x << " && " << endl;
-    cout << pos.y << " <= " << p.y << " && " << p.y << " <= " << pos.y + size.y << endl << endl;
-
-	return (pos.x <= p.x && p.x <= pos.x + size.x &&
-			pos.y <= p.y && p.y <= pos.y + size.y);
-}
-
-
 int rays_simulated = 8;
-int max_rays_simulated = 256;
+const int max_rays_simulated = 256;
 
-// ======= ENGINE CLASS =======
+
 class Engine2D : public olc::PixelGameEngine
 {
 public:

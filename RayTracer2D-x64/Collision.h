@@ -22,3 +22,5 @@ CollisionInfo SurfaceVsSurface(const Surface& surface1, const Surface& surface2,
 CollisionInfo SurfaceVsSurface(const Surface& surface1, const Surface& surface2);
 
 CollisionInfo RayVsSurface(const Ray& ray, const Surface& surface, olc::vd2d& intersectionPoint);
+
+bool PointVsRect(olc::vd2d point, olc::vd2d rectangle_position, olc::vd2d rectangle_size);
