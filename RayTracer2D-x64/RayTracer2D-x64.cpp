@@ -131,6 +131,7 @@ private:
 	{
 		is_cutting = false;
 		cutting_surface_first_point_set = false;
+		is_cutting_during_construction = false;
 	}
 
 
@@ -217,12 +218,18 @@ public:
 
 		if (GetMouse(2).bPressed || GetKey(olc::ESCAPE).bPressed)
 		{
-			if (first_point_constructed)
-				first_point_constructed = false;
+			if (!is_cutting_during_construction)
+			{
+				if (first_point_constructed)
+					first_point_constructed = false;
+				else
+					ExitConstructing();
+			}
+
+			if (cutting_surface_first_point_set)
+				cutting_surface_first_point_set = false;
 			else
-				ExitConstructing();
-			
-			ExitCutting();
+				ExitCutting();
 		}
 		if (GetKey(olc::S).bPressed && !is_cutting)
 		{
@@ -232,12 +239,15 @@ public:
 		if (GetKey(olc::R).bPressed)
 		{
 			if (is_cutting)
+			{
 				ExitCutting();
+			}
 			else
+			{
 				is_cutting = true;
-
-			if (is_constructing)
-				is_cutting_during_construction = !is_cutting_during_construction;
+				if (is_constructing)
+					is_cutting_during_construction = true;
+			}
 		}
 
 		cutting_surface.p2 = GetWorldMousePosition();
