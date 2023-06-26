@@ -518,7 +518,7 @@ public:
 				{
 					DrawNormal(intersection_point, nearest_surface, first_ray);
 
-					if (nearest_surface.is_refractive && scatter_info.reflected)
+					if (nearest_surface.is_refractive && scatter_info.refracted)
 						DrawNormal(intersection_point, nearest_surface, first_ray.OppositeRay());
 				}
 

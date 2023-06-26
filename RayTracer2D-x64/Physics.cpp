@@ -80,7 +80,10 @@ ScatterInfo ScatterRay(const Ray& ray, const Surface& surface,
 			scatteredRay = ReflectRay(ray, surface, intersectionPoint);
 			scatter_info.reflected = true;
 		}
-		scatter_info.refracted = true;
+		else
+		{
+			scatter_info.refracted = true;
+		}
 	}
 
 	return scatter_info;
