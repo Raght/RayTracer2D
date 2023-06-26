@@ -160,7 +160,7 @@ private:
 	
 	
 	Ray light_ray;
-	vector<Surface> surfaces;
+	vector<Surface**> surfaces;
 	bool hit_corner = false;
 	olc::vd2d corner_position;
 
@@ -385,6 +385,7 @@ public:
 				int surfaces_removed = 0;
 				for (int i = 0; i < surfaces_to_remove.size(); i++)
 				{
+					delete surfaces[i];
 					surfaces.erase(surfaces.begin() + surfaces_to_remove[i] - surfaces_removed);
 
 					surfaces_removed++;
@@ -438,6 +439,10 @@ public:
 
 		if (GetKey(olc::C).bPressed)
 		{
+			for (Surface** surface : surfaces)
+			{
+				delete surface;
+			}
 			surfaces.clear();
 			is_constructing = false;
 			first_point_constructed = false;
@@ -466,7 +471,7 @@ public:
 			{
 				vector<PointAndSurface> intersections_and_surfaces;
 
-				for (Surface& surface : surfaces)
+				for (Surface** surface : surfaces)
 				{
 					olc::vd2d intersection_point;
 					CollisionInfo collision_info = RayVsSurface(first_ray, surface, intersection_point);

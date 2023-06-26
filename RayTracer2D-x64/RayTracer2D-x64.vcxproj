@@ -19,20 +19,26 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Collision.h" />
     <ClInclude Include="Constants.h" />
     <ClInclude Include="Line.h" />
     <ClInclude Include="Math.h" />
     <ClInclude Include="olcPixelGameEngine.h" />
     <ClInclude Include="Physics.h" />
     <ClInclude Include="Ray.h" />
+    <ClInclude Include="ReflectiveSurface.h" />
+    <ClInclude Include="RefractiveSurface.h" />
     <ClInclude Include="Surface.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Collision.cpp" />
     <ClCompile Include="Line.cpp" />
     <ClCompile Include="Math.cpp" />
     <ClCompile Include="Physics.cpp" />
     <ClCompile Include="Ray.cpp" />
     <ClCompile Include="RayTracer2D-x64.cpp" />
+    <ClCompile Include="ReflectiveSurface.cpp" />
+    <ClCompile Include="RefractiveSurface.cpp" />
     <ClCompile Include="Surface.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

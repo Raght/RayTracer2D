@@ -2,6 +2,18 @@
 #include "olcPixelGameEngine.h"
 #include "Line.h"
 #include "Math.h"
+#include "Physics.h"
+#include "Ray.h"
+
+
+struct ScatterInfo
+{
+	ScatterInfo();
+	ScatterInfo(bool reflected, bool refracted);
+
+	bool reflected;
+	bool refracted;
+};
 
 
 enum class SurfaceType { REFLECTIVE, REFRACTIVE };
@@ -13,15 +25,13 @@ struct Surface : public Line
 	Surface(olc::vd2d point1, olc::vd2d point2, bool isReflective, bool isRefractive, double refractiveIndex);
 	Surface(olc::vd2d point1, olc::vd2d point2, SurfaceType surfaceType, double refractiveIndex);
 
-	//olc::vd2d PointMinX() const;
-	//olc::vd2d PointMaxX() const;
-	//olc::vd2d PointMinY() const;
-	//olc::vd2d PointMaxY() const;
-
 	void Extend(double length);
 	Surface Extended(double length) const;
 
 	bool ContainsPoint(olc::vd2d point);
+
+	virtual ScatterInfo ScatterRay(const Ray& ray, const Surface& surface,
+		const olc::vd2d& intersectionPoint, Ray& scatteredRay);
 
 
 	bool is_reflective;
