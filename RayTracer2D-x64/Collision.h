@@ -15,7 +15,7 @@ struct CollisionInfo
 	bool coincide;
 };
 
-CollisionInfo LineVsLine(Line line1, Line line2, olc::vd2d& intersectionPoint);
+CollisionInfo LineVsLine(const Line& line1, const Line& line2, olc::vd2d& intersectionPoint);
 
 CollisionInfo SurfaceVsSurface(const Surface& surface1, const Surface& surface2, olc::vd2d& intersectionPoint);
 

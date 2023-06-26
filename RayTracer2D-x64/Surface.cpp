@@ -7,7 +7,8 @@ Surface::Surface()
 	is_reflective = false;
 	is_refractive = !is_reflective;
 	refractive_index = 2.5f;
-	extension = 0;
+
+	extension = 2 * EPSILON;
 }
 
 Surface::Surface(olc::vd2d point1, olc::vd2d point2)
@@ -20,12 +21,12 @@ Surface::Surface(olc::vd2d point1, olc::vd2d point2)
 Surface::Surface(olc::vd2d point1, olc::vd2d point2, bool isReflective, bool isRefractive, double refractiveIndex)
 	: Surface(point1, point2)
 {
-	this->is_reflective = isReflective;
-	this->is_refractive = isRefractive;
-	this->refractive_index = refractiveIndex;
+	is_reflective = isReflective;
+	is_refractive = isRefractive;
+	refractive_index = refractiveIndex;
 }
 
-Surface::Surface(olc::vd2d point1, olc::vd2d point2, SurfaceType surfaceType, double refractiveIndex)
+Surface::Surface(olc::vd2d point1, olc::vd2d point2, SurfaceType surfaceType)
 	: Surface(point1, point2)
 {
 	if (surfaceType == SurfaceType::REFLECTIVE)
@@ -38,7 +39,11 @@ Surface::Surface(olc::vd2d point1, olc::vd2d point2, SurfaceType surfaceType, do
 		is_reflective = false;
 		is_refractive = true;
 	}
+}
 
+Surface::Surface(olc::vd2d point1, olc::vd2d point2, SurfaceType surfaceType, double refractiveIndex)
+	: Surface(point1, point2, surfaceType)
+{
 	refractive_index = refractiveIndex;
 }
 

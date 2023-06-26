@@ -14,26 +14,34 @@ CollisionInfo::CollisionInfo(bool intersect, bool coincide)
 }
 
 
-CollisionInfo LineVsLine(Line line1, Line line2, olc::vd2d& intersectionPoint)
+CollisionInfo LineVsLine(const Line& line1, const Line& line2, olc::vd2d& intersectionPoint)
 {
-	if (line1.p1.x > line1.p2.x)
-	{
-		std::swap(line1.p1, line1.p2);
-	}
-	if (line2.p1.x > line2.p2.x)
-	{
-		std::swap(line2.p1, line2.p2);
-	}
+	olc::vd2d line1_p1 = (line1.p1.x < line1.p2.x) ? line1.p1 : line1.p2;
+	olc::vd2d line1_p2 = (line1.p1.x < line1.p2.x) ? line1.p2 : line1.p1;
+	olc::vd2d line2_p1 = (line2.p1.x < line2.p2.x) ? line2.p1 : line2.p2;
+	olc::vd2d line2_p2 = (line2.p1.x < line2.p2.x) ? line2.p2 : line2.p1;
+
+	//if (line1.p1.x > line1.p2.x)
+	//{
+	//	std::swap(line1.p1, line1.p2);
+	//}
+	//if (line2.p1.x > line2.p2.x)
+	//{
+	//	std::swap(line2.p1, line2.p2);
+	//}
+
+
+	
 
 	/*
 		{ a1 * x + b1 = y
 		{ a2 * x + b2 = y
 	*/
 
-	double dx1 = line1.p2.x - line1.p1.x;
-	double dx2 = line2.p2.x - line2.p1.x;
-	double dy1 = line1.p2.y - line1.p1.y;
-	double dy2 = line2.p2.y - line2.p1.y;
+	double dx1 = line1_p2.x - line1_p1.x;
+	double dx2 = line2_p2.x - line2_p1.x;
+	double dy1 = line1_p2.y - line1_p1.y;
+	double dy2 = line2_p2.y - line2_p1.y;
 	double a1 = dy1 / dx1;
 	double a2 = dy2 / dx2;
 
@@ -42,19 +50,19 @@ CollisionInfo LineVsLine(Line line1, Line line2, olc::vd2d& intersectionPoint)
 	bool line1_vertical = isinf(a1);
 	bool line2_vertical = isinf(a2);
 
-	double b1 = line1.p1.y - a1 * line1.p1.x;
-	double b2 = line2.p1.y - a2 * line2.p1.x;
+	double b1 = line1_p1.y - a1 * line1_p1.x;
+	double b2 = line2_p1.y - a2 * line2_p1.x;
 
 	if (line1_horizontal)
 	{
 		if (line2_horizontal)
 		{
-			bool intersect_and_coincide = Equal(line1.p1.x, line2.p1.x);
+			bool intersect_and_coincide = Equal(line1_p1.y, line2_p1.y);
 			return CollisionInfo(intersect_and_coincide, intersect_and_coincide);
 		}
 		else if (line2_vertical)
 		{
-			intersectionPoint = { line2.p1.x, line1.p1.y };
+			intersectionPoint = { line2_p1.x, line1_p1.y };
 			return CollisionInfo(true, false);
 		}
 		else
@@ -67,8 +75,8 @@ CollisionInfo LineVsLine(Line line1, Line line2, olc::vd2d& intersectionPoint)
 				y0 = c
 			*/
 
-			double x0 = (line1.p1.y - b2) / a2;
-			double y0 = line1.p1.y;
+			double x0 = (line1_p1.y - b2) / a2;
+			double y0 = line1_p1.y;
 
 			intersectionPoint = { x0, y0 };
 			return CollisionInfo(true, false);
@@ -78,12 +86,12 @@ CollisionInfo LineVsLine(Line line1, Line line2, olc::vd2d& intersectionPoint)
 	{
 		if (line2_horizontal)
 		{
-			intersectionPoint = { line1.p1.x, line2.p1.y };
+			intersectionPoint = { line1_p1.x, line2_p1.y };
 			return CollisionInfo(true, false);
 		}
 		else if (line2_vertical)
 		{
-			bool intersect_and_coincide = Equal(line1.p1.y, line2.p1.y);
+			bool intersect_and_coincide = Equal(line1_p1.x, line2_p1.x);
 			return CollisionInfo(intersect_and_coincide, intersect_and_coincide);
 		}
 		else
@@ -96,8 +104,8 @@ CollisionInfo LineVsLine(Line line1, Line line2, olc::vd2d& intersectionPoint)
 				y0 = a2 * c + b2
 			*/
 
-			double x0 = line1.p1.x;
-			double y0 = a2 * line1.p1.x + b2;
+			double x0 = line1_p1.x;
+			double y0 = a2 * line1_p1.x + b2;
 
 			intersectionPoint = { x0, y0 };
 			return CollisionInfo(true, false);
@@ -115,8 +123,8 @@ CollisionInfo LineVsLine(Line line1, Line line2, olc::vd2d& intersectionPoint)
 				y0 = c
 			*/
 
-			double x0 = (line2.p1.y - b1) / a1;
-			double y0 = line2.p1.y;
+			double x0 = (line2_p1.y - b1) / a1;
+			double y0 = line2_p1.y;
 
 			intersectionPoint = { x0, y0 };
 			return CollisionInfo(true, false);
@@ -131,8 +139,8 @@ CollisionInfo LineVsLine(Line line1, Line line2, olc::vd2d& intersectionPoint)
 				y0 = a2 * c + b2
 			*/
 
-			double x0 = line2.p1.x;
-			double y0 = a1 * line2.p1.x + b1;
+			double x0 = line2_p1.x;
+			double y0 = a1 * line2_p1.x + b1;
 
 			intersectionPoint = { x0, y0 };
 			return CollisionInfo(true, false);

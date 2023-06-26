@@ -33,7 +33,7 @@ struct Shape
 
 
 int rays_simulated = 8;
-const int max_rays_simulated = 256;
+int max_rays_simulated = 256;
 
 
 class Engine2D : public olc::PixelGameEngine
@@ -147,7 +147,7 @@ private:
 	SurfaceType surface_type = SurfaceType::REFLECTIVE;
 	Surface surface_in_construction;
 	bool first_point_constructed = false;
-	bool is_constructing =false;
+	bool is_constructing = false;
 	double refractive_index = 1.5;
 	double nearest_point_snap_radius = 8;
 	olc::vd2d nearest_point;
@@ -204,6 +204,36 @@ public:
 			1);
 
 		UI_scale = max(int((double)ScreenWidth() / 640), 1);
+
+		int max_surfaces = 1000;
+		int surfaces_counter = 0;
+		int offset_x = 200;
+		int offset_y = 200;
+
+		int rect_offset_x = 5;
+		int rect_offset_y = 20;
+		int height = 30;
+		olc::vd2d point = { double(offset_x + rect_offset_x), (double)height };
+		olc::vd2d size = { double(ScreenWidth() - 2 * offset_x - 2 * rect_offset_x), double(offset_y - height - rect_offset_y) };
+
+		for (int y1 = ScreenHeight() - offset_y; y1 > offset_y && surfaces_counter < max_surfaces; y1--)
+		{
+			for (int y2 = ScreenHeight() - offset_y; y2 > offset_y && surfaces_counter < max_surfaces; y2--)
+			{
+				surfaces.push_back(Surface({ (double)offset_x, (double)y1 }, { double(ScreenWidth() - offset_x), (double)y2 }, SurfaceType::REFLECTIVE));
+				surfaces_counter++;
+			}
+		}
+		
+		light_ray.origin = point + size.vector_y() / 2 + olc::vd2d(2.0, 0.0);
+
+		max_rays_simulated = 256;
+		rays_simulated = max_rays_simulated;
+
+		surfaces.push_back(Surface(point, point + size.vector_y(), SurfaceType::REFLECTIVE));
+		surfaces.push_back(Surface(point + size.vector_y(), point + size, SurfaceType::REFLECTIVE));
+		surfaces.push_back(Surface(point + size, point + size.vector_x(), SurfaceType::REFLECTIVE));
+		surfaces.push_back(Surface(point + size.vector_x(), point, SurfaceType::REFLECTIVE));
 		
 		return true;
 	}
@@ -233,6 +263,12 @@ public:
 		}
 		if (GetKey(olc::S).bPressed && !is_cutting)
 		{
+			//if (is_constructing)
+			//{
+			//	ExitConstructing();
+			//	if (is_cutting_during_construction)
+			//		ExitCutting();
+			//}
 			is_constructing = !is_constructing;
 			first_point_constructed = false;
 		}
@@ -349,7 +385,6 @@ public:
 					if (nearest_point_found)
 						first_point_constructed = false;
 					
-					surface_in_construction.extension = 2 * EPSILON;
 					surfaces.push_back(surface_in_construction);
 					surface_in_construction.p1 = surface_in_construction.p2;
 				}
@@ -569,9 +604,9 @@ public:
 			UI_text_color);
 
 		if (is_cutting)
-			DrawStringUpLeftCorner(olc::vi2d{ 0, 8 * UI_scale }, "(R)EMOVING SURFACES", UI_switch_state_on_color);
+			DrawStringUpRightCorner(olc::vi2d{ ScreenWidth(), 2 * 8 * UI_scale }, "(R)EMOVING SURFACES", UI_switch_state_on_color);
 		else
-			DrawStringUpLeftCorner(olc::vi2d{ 0, 8 * UI_scale }, "(R)EMOVE SURFACES", UI_switch_state_off_color);
+			DrawStringUpRightCorner(olc::vi2d{ ScreenWidth(), 2 * 8 * UI_scale }, "(R)EMOVE SURFACES", UI_switch_state_off_color);
 		
 		// Full brightness mode
 		if (full_brightness)

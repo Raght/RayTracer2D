@@ -402,6 +402,10 @@ namespace olc
 		v2d_generic  perp() const { return v2d_generic(-y, x); }
 		T dot(const v2d_generic& rhs) const { return this->x * rhs.x + this->y * rhs.y; }
 		T cross(const v2d_generic& rhs) const { return this->x * rhs.y - this->y * rhs.x; }
+		v2d_generic  v_x() const { return v2d_generic(this->x, (T)0); };
+		v2d_generic  v_y() const { return v2d_generic((T)0, this->y); };
+		v2d_generic  vector_x() const { return v2d_generic(this->x, (T)0); };
+		v2d_generic  vector_y() const { return v2d_generic((T)0, this->y); };
 		v2d_generic  operator +  (const v2d_generic& rhs) const { return v2d_generic(this->x + rhs.x, this->y + rhs.y); }
 		v2d_generic  operator -  (const v2d_generic& rhs) const { return v2d_generic(this->x - rhs.x, this->y - rhs.y); }
 		v2d_generic  operator *  (const T& rhs)           const { return v2d_generic(this->x * rhs, this->y * rhs); }
