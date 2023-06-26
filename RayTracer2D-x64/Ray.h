@@ -12,17 +12,15 @@ struct Ray
 
 	olc::Pixel Color() const;
 
-	bool InsideSurface() const;
+	bool InVacuum() const;
+	bool InsideMedium() const;
 
-	void MoveOriginBack(double length)
-	{
-		origin -= length * direction;
-	}
 
 	Ray();
 	Ray(olc::vd2d origin, olc::vd2d direction, double distance);
 	Ray(olc::vd2d origin, olc::vd2d direction, double distance, olc::Pixel color, double brightness);
 	Ray(olc::vd2d origin, olc::vd2d direction, double distance, olc::Pixel color, double brightness, double refractive_index);
+
 
 	olc::vd2d origin;
 	olc::vd2d direction;

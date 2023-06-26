@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include "Math.h"
+#include "Collision.h"
 #include "Physics.h"
 #include "Ray.h"
 #include "Line.h"
@@ -618,7 +619,6 @@ public:
 		return true;
 	}
 };
-
 
 
 int main()

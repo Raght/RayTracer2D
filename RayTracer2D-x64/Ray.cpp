@@ -1,7 +1,6 @@
 #include "Ray.h"
 
 
-
 olc::vd2d Ray::EndPoint() const
 {
 	return origin + direction * distance;
@@ -20,10 +19,16 @@ olc::Pixel Ray::Color() const
 	return color_max_brightness * brightness;
 }
 
-bool Ray::InsideSurface() const
+bool Ray::InVacuum() const
 {
-	return !Equal(refractive_index, 1.0);
+	return Equal(refractive_index, 1.0);
 }
+
+bool Ray::InsideMedium() const
+{
+	return !InsideMedium();
+}
+
 
 Ray::Ray()
 {
