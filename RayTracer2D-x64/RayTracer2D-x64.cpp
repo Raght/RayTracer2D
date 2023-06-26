@@ -377,6 +377,8 @@ public:
 
 					surfaces_removed++;
 				}
+
+				surfaces_to_remove.clear();
 			}
 			else
 			{
