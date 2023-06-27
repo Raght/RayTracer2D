@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
+#include <execution>
 #include "Math.h"
 #include "Collision.h"
 #include "Physics.h"
@@ -205,7 +206,7 @@ public:
 
 		UI_scale = max(int((double)ScreenWidth() / 640), 1);
 
-		int max_surfaces = 1000;
+		int max_surfaces = 4000;
 		int surfaces_counter = 0;
 		int offset_x = 200;
 		int offset_y = 200;
@@ -489,8 +490,36 @@ public:
 		{
 			for (int i = 0; i < rays_simulated; i++)
 			{
-				vector<PointAndSurface> intersections_and_surfaces;
+#define MT 1
+#if MT
+				olc::vd2d point_empty = olc::vd2d(~0, ~0);
+				Surface surface_empty = Surface(olc::vd2d(~0, ~0), olc::vd2d(~0, ~0));
 
+				vector<int> indexes(surfaces.size());
+				for (int i = 0; i < indexes.size(); i++)
+				{
+					indexes[i] = i;
+				}
+				vector<PointAndSurface> intersections_and_surfaces_map(surfaces.size(), { point_empty, surface_empty });
+
+				std::for_each(std::execution::par, indexes.begin(), indexes.end(),
+					[&](int i) {
+						olc::vd2d intersection_point;
+						CollisionInfo collision_info = RayVsSurface(first_ray, surfaces[i], intersection_point);
+						if ((collision_info.intersect || collision_info.coincide) && nearest_surface != surfaces[i])
+						{
+							intersections_and_surfaces_map[i] = { intersection_point, surfaces[i] };
+						}
+					});
+
+				vector<PointAndSurface> intersections_and_surfaces;
+				for (PointAndSurface& intersection_and_surface : intersections_and_surfaces_map)
+				{
+					if (intersection_and_surface.point != point_empty && intersection_and_surface.surface != surface_empty)
+						intersections_and_surfaces.push_back(intersection_and_surface);
+				}
+#else
+				vector<PointAndSurface> intersections_and_surfaces;
 				for (Surface& surface : surfaces)
 				{
 					olc::vd2d intersection_point;
@@ -500,6 +529,7 @@ public:
 						intersections_and_surfaces.push_back({ intersection_point, surface });
 					}
 				}
+#endif
 
 				if (intersections_and_surfaces.size() == 0)
 				{
