@@ -15,11 +15,11 @@
 
 using namespace std;
 
-Surface null_surface = Surface(olc::vd2d(~0, ~0), olc::vd2d(~0, ~0));
+
 struct PointAndSurface
 {
 	olc::vd2d point;
-	Surface surface = null_surface;
+	Surface surface;
 
 	PointAndSurface(const olc::vd2d& point, Surface& surface)
 	{
@@ -37,6 +37,9 @@ struct Shape
 
 	}
 };
+
+Surface null_surface = Surface(olc::vd2d(~0, ~0), olc::vd2d(~0, ~0));
+PointAndSurface null_point_and_surface = PointAndSurface(olc::vd2d(INFINITY, INFINITY), null_surface);
 
 
 int rays_simulated = 8;
@@ -143,7 +146,10 @@ private:
 
 
 	bool debug_mode = false;
-	
+	bool debug_UI_show_surface_points_positions = false;
+	bool debug_UI_show_intersections_positions = true;
+	olc::vi2d debug_UI_intersections_screen_position;
+
 	
 	Ray light_ray;
 	vector<Surface> surfaces;
@@ -177,6 +183,7 @@ private:
 
 
 	int UI_scale;
+	int UI_character_size;
 	double view_scale = 1;
 
 	bool full_brightness = false;
@@ -211,6 +218,7 @@ public:
 			1);
 
 		UI_scale = max(int((double)ScreenWidth() / 640), 1);
+		UI_character_size = 8 * UI_scale;
 
 		int max_surfaces = 1000;
 		int surfaces_counter = 0;
@@ -533,6 +541,8 @@ public:
 						intersections_and_surfaces.push_back(PointAndSurface(intersection_point, surface));
 					}
 				}
+
+				
 #endif
 
 				if (intersections_and_surfaces.size() == 0)
@@ -541,46 +551,77 @@ public:
 					break;
 				}
 
-				sort(intersections_and_surfaces.begin(),
-					intersections_and_surfaces.end(),
-					[ray_origin = first_ray.origin](const PointAndSurface& s1, const PointAndSurface& s2)
-					{
-						return (s1.point - ray_origin).mag2() < (s2.point - ray_origin).mag2();
-					});
-
-				if (debug_mode && i == 0)
+				PointAndSurface closest_intersection_and_surface = intersections_and_surfaces[0];
+				
+				if (intersections_and_surfaces.size() > 1)
 				{
+					double distance_closest = (closest_intersection_and_surface.point - first_ray.origin).mag2();
+					int index_closest = 0;
+					for (int i = 0; i < intersections_and_surfaces.size(); i++)
+					{
+						PointAndSurface& intersection_and_surface = intersections_and_surfaces[i];
+
+						double distance_current = (intersection_and_surface.point - first_ray.origin).mag2();
+
+						if (distance_current < distance_closest)
+						{
+							closest_intersection_and_surface = intersection_and_surface;
+							distance_closest = (closest_intersection_and_surface.point - first_ray.origin).mag2();
+							index_closest = i;
+						}
+					}
+
+					PointAndSurface second_closest_intersection_and_surface = PointAndSurface(first_ray.origin + olc::vd2d(first_ray.distance + 1, 0), null_surface);
+					double distance_second_closest = (first_ray.distance + 1) * (first_ray.distance + 1);
+					for (int i = 0; i < intersections_and_surfaces.size(); i++)
+					{
+						PointAndSurface& intersection_and_surface = intersections_and_surfaces[i];
+
+						double distance_current = (intersection_and_surface.point - first_ray.origin).mag2();
+
+						if (distance_closest <= distance_current && distance_current < distance_second_closest && i != index_closest)
+						{
+							second_closest_intersection_and_surface = intersection_and_surface;
+							distance_second_closest = (second_closest_intersection_and_surface.point - first_ray.origin).mag2();
+						}
+					}
+
+					if (abs(distance_second_closest - distance_closest) < EPSILON)
+					{
+						hit_corner = true;
+						corner_position = closest_intersection_and_surface.point;
+
+						DrawRay(first_ray, corner_position);
+
+						break;
+					}
+				}
+
+				
+				if (debug_mode && debug_UI_show_intersections_positions)
+				{
+					if (i == 0)
+						debug_UI_intersections_screen_position = olc::vi2d(0, 8 * UI_scale);
+
+					DrawStringUpLeftCorner(debug_UI_intersections_screen_position, "i = " + to_string(i), UI_text_color);
+					debug_UI_intersections_screen_position.y += UI_character_size;
 					for (int j = 0; j < intersections_and_surfaces.size(); j++)
 					{
 						string x = to_string(intersections_and_surfaces[j].point.x);
 						string y = to_string(intersections_and_surfaces[j].point.y);
-						DrawStringUpLeftCorner({ 0, (j + 1) * 8 * UI_scale }, x + ' ' + y, UI_text_color);
+						DrawStringUpLeftCorner(debug_UI_intersections_screen_position, '#' + to_string(j) + ' ' + x + ' ' + y, UI_text_color);
+
+						debug_UI_intersections_screen_position.y += UI_character_size;
 					}
 				}
 
-				olc::vd2d intersection_point = intersections_and_surfaces[0].point;
-				nearest_surface = intersections_and_surfaces[0].surface;
+
+				olc::vd2d intersection_point = closest_intersection_and_surface.point;
+				nearest_surface = closest_intersection_and_surface.surface;
 
 				DrawRay(first_ray, intersection_point);
 
 
-				vector<PointAndSurface> close_intersections_and_surfaces;
-				PointAndSurface closest = intersections_and_surfaces[0];
-				for (PointAndSurface& intersection_and_surface : intersections_and_surfaces)
-				{
-					if ((intersection_and_surface.point - closest.point).mag2() < EPSILON)
-					{
-						close_intersections_and_surfaces.push_back(intersection_and_surface);
-					}
-				}
-
-				if (close_intersections_and_surfaces.size() > 1)
-				{
-					hit_corner = true;
-					corner_position = closest.point;
-					break;
-				}
-				
 
 				ScatterInfo scatter_info = ScatterRay(first_ray, nearest_surface, intersection_point, second_ray);
 
@@ -603,7 +644,7 @@ public:
 		for (Surface& surface : surfaces)
 		{
 			DrawSurface(surface);
-			if (debug_mode)
+			if (debug_mode && debug_UI_show_surface_points_positions)
 			{
 				DrawStringUpLeftCorner(ToScreenSpace(surface.p1), "(" + to_string(surface.p1.x) + "; " + to_string(surface.p1.y) + ")", UI_text_color);
 				DrawStringUpLeftCorner(ToScreenSpace(surface.p2), "(" + to_string(surface.p2.x) + "; " + to_string(surface.p2.y) + ")", UI_text_color);
@@ -640,9 +681,9 @@ public:
 			UI_text_color);
 
 		if (is_cutting)
-			DrawStringUpRightCorner(olc::vi2d{ ScreenWidth(), 2 * 8 * UI_scale }, "(R)EMOVING SURFACES", UI_switch_state_on_color);
+			DrawStringUpRightCorner(olc::vi2d{ ScreenWidth(), 2 * UI_character_size }, "(R)EMOVING SURFACES", UI_switch_state_on_color);
 		else
-			DrawStringUpRightCorner(olc::vi2d{ ScreenWidth(), 2 * 8 * UI_scale }, "(R)EMOVE SURFACES", UI_switch_state_off_color);
+			DrawStringUpRightCorner(olc::vi2d{ ScreenWidth(), 2 * UI_character_size }, "(R)EMOVE SURFACES", UI_switch_state_off_color);
 		
 		// Full brightness mode
 		if (full_brightness)
@@ -659,7 +700,7 @@ public:
 			else if (surface_type == SurfaceType::REFRACTIVE)
 			{
 				DrawStringUpRightCorner(olc::vi2d{ ScreenWidth(), 0 }, "REFRACTIVE (S)URFACE", refractive_surface_color);
-				DrawStringUpRightCorner(olc::vi2d{ ScreenWidth(), 8 * UI_scale }, to_string(refractive_index), refractive_surface_color);
+				DrawStringUpRightCorner(olc::vi2d{ ScreenWidth(), UI_character_size }, to_string(refractive_index), refractive_surface_color);
 			}
 		}
 		else
