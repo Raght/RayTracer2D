@@ -21,18 +21,6 @@ CollisionInfo LineVsLine(const Line& line1, const Line& line2, olc::vd2d& inters
 	olc::vd2d line2_p1 = (line2.p1.x < line2.p2.x) ? line2.p1 : line2.p2;
 	olc::vd2d line2_p2 = (line2.p1.x < line2.p2.x) ? line2.p2 : line2.p1;
 
-	//if (line1.p1.x > line1.p2.x)
-	//{
-	//	std::swap(line1.p1, line1.p2);
-	//}
-	//if (line2.p1.x > line2.p2.x)
-	//{
-	//	std::swap(line2.p1, line2.p2);
-	//}
-
-
-	
-
 	/*
 		{ a1 * x + b1 = y
 		{ a2 * x + b2 = y
@@ -192,10 +180,17 @@ CollisionInfo SurfaceVsSurface(const Surface& surface1, const Surface& surface2,
 		return collision_info;
 	}
 
-	Surface extended_surface1 = surface1.Extended(surface1.extension);
-	Surface extended_surface2 = surface2.Extended(surface2.extension);
-	bool point_lies_on_surface1 = (intersectionPoint - extended_surface1.p1).dot(intersectionPoint - extended_surface1.p2) < 0.0;
-	bool point_lies_on_surface2 = (intersectionPoint - extended_surface2.p1).dot(intersectionPoint - extended_surface2.p2) < 0.0;
+	//Surface extended_surface1 = surface1.Extended(surface1.extension);
+	//Surface extended_surface2 = surface2.Extended(surface2.extension);
+	//bool point_lies_on_surface1 = (intersectionPoint - extended_surface1.p1).dot(intersectionPoint - extended_surface1.p2) < 0.0;
+	//bool point_lies_on_surface2 = (intersectionPoint - extended_surface2.p1).dot(intersectionPoint - extended_surface2.p2) < 0.0;
+
+	double surface1_length = (surface1.p2 - surface1.p1).mag();
+	double surface2_length = (surface2.p2 - surface2.p1).mag();
+	double surface1_limit_dot_product = surface1.extension * (surface1_length + surface1.extension);
+	double surface2_limit_dot_product = surface2.extension * (surface2_length + surface2.extension);
+	bool point_lies_on_surface1 = (intersectionPoint - surface1.p1).dot(intersectionPoint - surface1.p2) < surface1_limit_dot_product;
+	bool point_lies_on_surface2 = (intersectionPoint - surface2.p1).dot(intersectionPoint - surface2.p2) < surface2_limit_dot_product;
 
 	if (collision_info.intersect && point_lies_on_surface1 && point_lies_on_surface2)
 	{

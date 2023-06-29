@@ -15,11 +15,17 @@
 
 using namespace std;
 
-
+Surface null_surface = Surface(olc::vd2d(~0, ~0), olc::vd2d(~0, ~0));
 struct PointAndSurface
 {
 	olc::vd2d point;
-	Surface surface;
+	Surface surface = null_surface;
+
+	PointAndSurface(const olc::vd2d& point, Surface& surface)
+	{
+		this->point = point;
+		this->surface = surface;
+	}
 };
 
 struct Shape
@@ -206,7 +212,7 @@ public:
 
 		UI_scale = max(int((double)ScreenWidth() / 640), 1);
 
-		int max_surfaces = 4000;
+		int max_surfaces = 1000;
 		int surfaces_counter = 0;
 		int offset_x = 200;
 		int offset_y = 200;
@@ -348,9 +354,7 @@ public:
 							}
 
 							if (nearest_point_found)
-							{
 								break;
-							}
 						}
 					}
 				}	
@@ -484,13 +488,13 @@ public:
 
 		Ray first_ray = light_ray;
 		Ray second_ray = first_ray;
-		Surface nearest_surface = Surface(olc::vd2d(~0, ~0), olc::vd2d(~0, ~0));
+		Surface nearest_surface = null_surface;
 		hit_corner = false;
 		if (!is_constructing && !is_cutting)
 		{
 			for (int i = 0; i < rays_simulated; i++)
 			{
-#define MT 1
+#define MT 0
 #if MT
 				olc::vd2d point_empty = olc::vd2d(~0, ~0);
 				Surface surface_empty = Surface(olc::vd2d(~0, ~0), olc::vd2d(~0, ~0));
@@ -526,7 +530,7 @@ public:
 					CollisionInfo collision_info = RayVsSurface(first_ray, surface, intersection_point);
 					if ((collision_info.intersect || collision_info.coincide) && nearest_surface != surface)
 					{
-						intersections_and_surfaces.push_back({ intersection_point, surface });
+						intersections_and_surfaces.push_back(PointAndSurface(intersection_point, surface));
 					}
 				}
 #endif
@@ -548,7 +552,9 @@ public:
 				{
 					for (int j = 0; j < intersections_and_surfaces.size(); j++)
 					{
-						DrawStringUpLeftCorner({ 0, (j + 1) * 8 * UI_scale }, to_string(intersections_and_surfaces[j].point.x) + ' ' + to_string(intersections_and_surfaces[j].point.y), UI_text_color);
+						string x = to_string(intersections_and_surfaces[j].point.x);
+						string y = to_string(intersections_and_surfaces[j].point.y);
+						DrawStringUpLeftCorner({ 0, (j + 1) * 8 * UI_scale }, x + ' ' + y, UI_text_color);
 					}
 				}
 
