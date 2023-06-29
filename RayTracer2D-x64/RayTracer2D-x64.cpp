@@ -208,7 +208,7 @@ public:
 		UI_scale = max(int((double)ScreenWidth() / 640), 1);
 		UI_character_size = 8 * UI_scale;
 
-		int max_surfaces = 4000;
+		int max_surfaces = 1000;
 		int surfaces_counter = 0;
 		int offset_x = 200;
 		int offset_y = 200;
@@ -492,7 +492,6 @@ public:
 			{
 #define MT 0
 #if MT
-
 				vector<int> indexes_iterators(surfaces.size());
 				for (int i = 0; i < indexes_iterators.size(); i++)
 				{
@@ -522,7 +521,7 @@ public:
 						indexes.push_back(i);
 					}
 				}
-#else
+#elif !MT
 				vector<olc::vd2d> intersections;
 				vector<int> indexes;
 				
@@ -593,29 +592,10 @@ public:
 				}
 
 				
-				if (debug_mode && debug_UI_show_intersections_positions)
-				{
-					if (i == 0)
-						debug_UI_intersections_screen_position = olc::vi2d(0, 8 * UI_scale);
-				
-					DrawStringUpLeftCorner(debug_UI_intersections_screen_position, "i = " + to_string(i), UI_text_color);
-					debug_UI_intersections_screen_position.y += UI_character_size;
-					for (int j = 0; j < intersections.size(); j++)
-					{
-						string x = to_string(intersections[j].x);
-						string y = to_string(intersections[j].y);
-						DrawStringUpLeftCorner(debug_UI_intersections_screen_position, '#' + to_string(j) + ' ' + x + ' ' + y, UI_text_color);
-				
-						debug_UI_intersections_screen_position.y += UI_character_size;
-					}
-				}
-				
-
 				olc::vd2d intersection_point = closest_intersection;
 				nearest_surface = surfaces[closest_surface_index];
 
 				DrawRay(first_ray, intersection_point);
-
 
 
 				ScatterInfo scatter_info = ScatterRay(first_ray, nearest_surface, intersection_point, second_ray);
@@ -633,6 +613,24 @@ public:
 
 
 				first_ray = second_ray;
+
+
+				if (debug_mode && debug_UI_show_intersections_positions)
+				{
+					if (i == 0)
+						debug_UI_intersections_screen_position = olc::vi2d(0, 8 * UI_scale);
+
+					DrawStringUpLeftCorner(debug_UI_intersections_screen_position, "i = " + to_string(i), UI_text_color);
+					debug_UI_intersections_screen_position.y += UI_character_size;
+					for (int j = 0; j < intersections.size(); j++)
+					{
+						string x = to_string(intersections[j].x);
+						string y = to_string(intersections[j].y);
+						DrawStringUpLeftCorner(debug_UI_intersections_screen_position, '#' + to_string(j) + ' ' + x + ' ' + y, UI_text_color);
+
+						debug_UI_intersections_screen_position.y += UI_character_size;
+					}
+				}
 			}
 		}
 
