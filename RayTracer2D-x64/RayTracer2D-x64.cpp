@@ -16,18 +16,6 @@
 using namespace std;
 
 
-struct PointAndSurface
-{
-	olc::vd2d point;
-	Surface surface;
-
-	PointAndSurface(const olc::vd2d& point, Surface& surface)
-	{
-		this->point = point;
-		this->surface = surface;
-	}
-};
-
 struct Shape
 {
 	vector<olc::vd2d> points;
@@ -38,8 +26,8 @@ struct Shape
 	}
 };
 
+olc::vd2d null_point = olc::vd2d(~0, ~0);
 Surface null_surface = Surface(olc::vd2d(~0, ~0), olc::vd2d(~0, ~0));
-PointAndSurface null_point_and_surface = PointAndSurface(olc::vd2d(INFINITY, INFINITY), null_surface);
 
 
 int rays_simulated = 8;
@@ -220,7 +208,7 @@ public:
 		UI_scale = max(int((double)ScreenWidth() / 640), 1);
 		UI_character_size = 8 * UI_scale;
 
-		int max_surfaces = 1000;
+		int max_surfaces = 4000;
 		int surfaces_counter = 0;
 		int offset_x = 200;
 		int offset_y = 200;
@@ -504,92 +492,99 @@ public:
 			{
 #define MT 0
 #if MT
-				olc::vd2d point_empty = olc::vd2d(~0, ~0);
-				Surface surface_empty = Surface(olc::vd2d(~0, ~0), olc::vd2d(~0, ~0));
 
-				vector<int> indexes(surfaces.size());
-				for (int i = 0; i < indexes.size(); i++)
+				vector<int> indexes_iterators(surfaces.size());
+				for (int i = 0; i < indexes_iterators.size(); i++)
 				{
-					indexes[i] = i;
+					indexes_iterators[i] = i;
 				}
-				vector<PointAndSurface> intersections_and_surfaces_map(surfaces.size(), { point_empty, surface_empty });
 
-				std::for_each(std::execution::par, indexes.begin(), indexes.end(),
+				vector<olc::vd2d> intersections_per_surface(surfaces.size(), null_point);
+
+				std::for_each(std::execution::par, indexes_iterators.begin(), indexes_iterators.end(),
 					[&](int i) {
 						olc::vd2d intersection_point;
 						CollisionInfo collision_info = RayVsSurface(first_ray, surfaces[i], intersection_point);
 						if ((collision_info.intersect || collision_info.coincide) && nearest_surface != surfaces[i])
 						{
-							intersections_and_surfaces_map[i] = { intersection_point, surfaces[i] };
+							intersections_per_surface[i] = intersection_point;
 						}
 					});
 
-				vector<PointAndSurface> intersections_and_surfaces;
-				for (PointAndSurface& intersection_and_surface : intersections_and_surfaces_map)
+				vector<olc::vd2d> intersections;
+				vector<int> indexes;
+				for (int i = 0; i < intersections_per_surface.size(); i++)
 				{
-					if (intersection_and_surface.point != point_empty && intersection_and_surface.surface != surface_empty)
-						intersections_and_surfaces.push_back(intersection_and_surface);
-				}
-#else
-				vector<PointAndSurface> intersections_and_surfaces;
-				for (Surface& surface : surfaces)
-				{
-					olc::vd2d intersection_point;
-					CollisionInfo collision_info = RayVsSurface(first_ray, surface, intersection_point);
-					if ((collision_info.intersect || collision_info.coincide) && nearest_surface != surface)
+					olc::vd2d& intersection = intersections_per_surface[i];
+					if (intersection != null_point)
 					{
-						intersections_and_surfaces.push_back(PointAndSurface(intersection_point, surface));
+						intersections.push_back(intersection);
+						indexes.push_back(i);
 					}
 				}
-
+#else
+				vector<olc::vd2d> intersections;
+				vector<int> indexes;
 				
+				for (int i = 0; i < surfaces.size(); i++)
+				{
+					olc::vd2d intersection_point;
+					CollisionInfo collision_info = RayVsSurface(first_ray, surfaces[i], intersection_point);
+					if ((collision_info.intersect || collision_info.coincide) && nearest_surface != surfaces[i])
+					{
+						intersections.push_back(intersection_point);
+						indexes.push_back(i);
+					}
+				}
 #endif
 
-				if (intersections_and_surfaces.size() == 0)
+				if (intersections.size() == 0)
 				{
 					DrawRay(first_ray);
 					break;
 				}
 
-				PointAndSurface closest_intersection_and_surface = intersections_and_surfaces[0];
-				
-				if (intersections_and_surfaces.size() > 1)
-				{
-					double distance_closest = (closest_intersection_and_surface.point - first_ray.origin).mag2();
-					int index_closest = 0;
-					for (int i = 0; i < intersections_and_surfaces.size(); i++)
-					{
-						PointAndSurface& intersection_and_surface = intersections_and_surfaces[i];
+				olc::vd2d closest_intersection = intersections[0];
+				int closest_surface_index = indexes[0];
+				int closest_intersection_index = 0;
 
-						double distance_current = (intersection_and_surface.point - first_ray.origin).mag2();
+				if (intersections.size() > 1)
+				{
+					double distance_closest = (closest_intersection - first_ray.origin).mag2();
+					for (int i = 0; i < intersections.size(); i++)
+					{
+						olc::vd2d& intersection = intersections[i];
+
+						double distance_current = (intersection - first_ray.origin).mag2();
 
 						if (distance_current < distance_closest)
 						{
-							closest_intersection_and_surface = intersection_and_surface;
-							distance_closest = (closest_intersection_and_surface.point - first_ray.origin).mag2();
-							index_closest = i;
+							closest_intersection = intersection;
+							distance_closest = (closest_intersection - first_ray.origin).mag2();
+							closest_intersection_index = i;
+							closest_surface_index = indexes[i];
 						}
 					}
 
-					PointAndSurface second_closest_intersection_and_surface = PointAndSurface(first_ray.origin + olc::vd2d(first_ray.distance + 1, 0), null_surface);
+					olc::vd2d second_closest_intersection = first_ray.origin + olc::vd2d(first_ray.distance + 1, 0);
 					double distance_second_closest = (first_ray.distance + 1) * (first_ray.distance + 1);
-					for (int i = 0; i < intersections_and_surfaces.size(); i++)
+					for (int i = 0; i < intersections.size(); i++)
 					{
-						PointAndSurface& intersection_and_surface = intersections_and_surfaces[i];
+						olc::vd2d& intersection = intersections[i];
 
-						double distance_current = (intersection_and_surface.point - first_ray.origin).mag2();
+						double distance_current = (intersection - first_ray.origin).mag2();
 
-						if (distance_closest <= distance_current && distance_current < distance_second_closest && i != index_closest)
+						if (distance_closest <= distance_current && distance_current < distance_second_closest && i != closest_intersection_index)
 						{
-							second_closest_intersection_and_surface = intersection_and_surface;
-							distance_second_closest = (second_closest_intersection_and_surface.point - first_ray.origin).mag2();
+							second_closest_intersection = intersection;
+							distance_second_closest = (second_closest_intersection - first_ray.origin).mag2();
 						}
 					}
 
 					if (abs(distance_second_closest - distance_closest) < EPSILON)
 					{
 						hit_corner = true;
-						corner_position = closest_intersection_and_surface.point;
+						corner_position = closest_intersection;
 
 						DrawRay(first_ray, corner_position);
 
@@ -602,22 +597,22 @@ public:
 				{
 					if (i == 0)
 						debug_UI_intersections_screen_position = olc::vi2d(0, 8 * UI_scale);
-
+				
 					DrawStringUpLeftCorner(debug_UI_intersections_screen_position, "i = " + to_string(i), UI_text_color);
 					debug_UI_intersections_screen_position.y += UI_character_size;
-					for (int j = 0; j < intersections_and_surfaces.size(); j++)
+					for (int j = 0; j < intersections.size(); j++)
 					{
-						string x = to_string(intersections_and_surfaces[j].point.x);
-						string y = to_string(intersections_and_surfaces[j].point.y);
+						string x = to_string(intersections[j].x);
+						string y = to_string(intersections[j].y);
 						DrawStringUpLeftCorner(debug_UI_intersections_screen_position, '#' + to_string(j) + ' ' + x + ' ' + y, UI_text_color);
-
+				
 						debug_UI_intersections_screen_position.y += UI_character_size;
 					}
 				}
+				
 
-
-				olc::vd2d intersection_point = closest_intersection_and_surface.point;
-				nearest_surface = closest_intersection_and_surface.surface;
+				olc::vd2d intersection_point = closest_intersection;
+				nearest_surface = surfaces[closest_surface_index];
 
 				DrawRay(first_ray, intersection_point);
 
