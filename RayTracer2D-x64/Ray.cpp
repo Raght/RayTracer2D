@@ -26,7 +26,7 @@ bool Ray::InVacuum() const
 
 bool Ray::InsideMedium() const
 {
-	return !InsideMedium();
+	return !InVacuum();
 }
 
 

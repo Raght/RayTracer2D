@@ -17,6 +17,20 @@
 using namespace std;
 
 
+namespace std
+{
+	template<>
+	struct iterator_traits<RangeIterator>
+	{
+		using iterator_category = std::forward_iterator_tag;
+		using value_type = int;
+		using pointer = int*;
+		using reference = int&;
+		using difference_type = int;
+	};
+}
+
+
 struct Shape
 {
 	vector<olc::vd2d> points;
@@ -209,10 +223,10 @@ public:
 		UI_scale = max(int((double)ScreenWidth() / 640), 1);
 		UI_character_size = 8 * UI_scale;
 
-		int max_surfaces = 1000;
+		int max_surfaces = 16000;
 		int surfaces_counter = 0;
-		int offset_x = 200;
-		int offset_y = 200;
+		int offset_x = 100;
+		int offset_y = 100;
 
 		int rect_offset_x = 5;
 		int rect_offset_y = 20;
@@ -492,18 +506,13 @@ public:
 			for (int i = 0; i < rays_simulated; i++)
 			{
 #define MT 1
-#if MT
-				//vector<int> indexes_iterators(surfaces.size());
-				//for (int i = 0; i < indexes_iterators.size(); i++)
-				//{
-				//	indexes_iterators[i] = i;
-				//}
-
+#define MT_RANGE 1
+#if MT && MT_RANGE
 				Range indexes_iterators(0, surfaces.size());
 
 				vector<olc::vd2d> intersections_per_surface(surfaces.size(), null_point);
 
-				std::for_each(indexes_iterators.begin(), indexes_iterators.end(),
+				std::for_each(std::execution::par, indexes_iterators.begin(), indexes_iterators.end(),
 					[&](int i) {
 						olc::vd2d intersection_point;
 						CollisionInfo collision_info = RayVsSurface(first_ray, surfaces[i], intersection_point);
@@ -512,8 +521,26 @@ public:
 							intersections_per_surface[i] = intersection_point;
 						}
 					});
+#elif MT && !MT_RANGE
+				vector<int> indexes_iterators(surfaces.size());
+				for (int i = 0; i < indexes_iterators.size(); i++)
+				{
+					indexes_iterators[i] = i;
+				}
 
+				vector<olc::vd2d> intersections_per_surface(surfaces.size(), null_point);
 
+				std::for_each(std::execution::par, indexes_iterators.begin(), indexes_iterators.end(),
+					[&](int i) {
+						olc::vd2d intersection_point;
+						CollisionInfo collision_info = RayVsSurface(first_ray, surfaces[i], intersection_point);
+						if ((collision_info.intersect || collision_info.coincide) && nearest_surface != surfaces[i])
+						{
+							intersections_per_surface[i] = intersection_point;
+						}
+					});
+#endif
+#if MT
 				vector<olc::vd2d> intersections;
 				vector<int> indexes;
 				for (int i = 0; i < intersections_per_surface.size(); i++)
@@ -525,10 +552,11 @@ public:
 						indexes.push_back(i);
 					}
 				}
-#elif !MT
+
+#else
 				vector<olc::vd2d> intersections;
 				vector<int> indexes;
-				
+
 				for (int i = 0; i < surfaces.size(); i++)
 				{
 					olc::vd2d intersection_point;

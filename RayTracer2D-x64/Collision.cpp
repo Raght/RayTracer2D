@@ -27,14 +27,13 @@ CollisionInfo LineVsLine(const Line& line1, const Line& line2, olc::vd2d& inters
 	double dy2 = line2.p2.y - line2.p1.y;
 	double a1 = dy1 / dx1;
 	double a2 = dy2 / dx2;
+	double b1 = line1.p1.y - a1 * line1.p1.x;
+	double b2 = line2.p1.y - a2 * line2.p1.x;
 
 	bool line1_horizontal = Equal(a1, 0);
 	bool line2_horizontal = Equal(a2, 0);
 	bool line1_vertical = isinf(a1);
 	bool line2_vertical = isinf(a2);
-
-	double b1 = line1.p1.y - a1 * line1.p1.x;
-	double b2 = line2.p1.y - a2 * line2.p1.x;
 
 	if (line1_horizontal)
 	{
