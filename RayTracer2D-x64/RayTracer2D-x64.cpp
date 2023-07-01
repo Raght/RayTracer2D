@@ -509,25 +509,14 @@ public:
 #define MT_RANGE 1
 #if MT && MT_RANGE
 				Range indexes_iterators(0, surfaces.size());
-
-				vector<olc::vd2d> intersections_per_surface(surfaces.size(), null_point);
-
-				std::for_each(std::execution::par, indexes_iterators.begin(), indexes_iterators.end(),
-					[&](int i) {
-						olc::vd2d intersection_point;
-						CollisionInfo collision_info = RayVsSurface(first_ray, surfaces[i], intersection_point);
-						if ((collision_info.intersect || collision_info.coincide) && nearest_surface != surfaces[i])
-						{
-							intersections_per_surface[i] = intersection_point;
-						}
-					});
 #elif MT && !MT_RANGE
 				vector<int> indexes_iterators(surfaces.size());
 				for (int i = 0; i < indexes_iterators.size(); i++)
 				{
 					indexes_iterators[i] = i;
 				}
-
+#endif
+#if MT
 				vector<olc::vd2d> intersections_per_surface(surfaces.size(), null_point);
 
 				std::for_each(std::execution::par, indexes_iterators.begin(), indexes_iterators.end(),
@@ -539,8 +528,6 @@ public:
 							intersections_per_surface[i] = intersection_point;
 						}
 					});
-#endif
-#if MT
 				vector<olc::vd2d> intersections;
 				vector<int> indexes;
 				for (int i = 0; i < intersections_per_surface.size(); i++)
