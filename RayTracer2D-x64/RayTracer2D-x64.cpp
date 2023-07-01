@@ -11,6 +11,7 @@
 #include "Ray.h"
 #include "Line.h"
 #include "Surface.h"
+#include "Range.h"
 #include "Constants.h"
 
 using namespace std;
@@ -490,17 +491,19 @@ public:
 		{
 			for (int i = 0; i < rays_simulated; i++)
 			{
-#define MT 0
+#define MT 1
 #if MT
-				vector<int> indexes_iterators(surfaces.size());
-				for (int i = 0; i < indexes_iterators.size(); i++)
-				{
-					indexes_iterators[i] = i;
-				}
+				//vector<int> indexes_iterators(surfaces.size());
+				//for (int i = 0; i < indexes_iterators.size(); i++)
+				//{
+				//	indexes_iterators[i] = i;
+				//}
+
+				Range indexes_iterators(0, surfaces.size());
 
 				vector<olc::vd2d> intersections_per_surface(surfaces.size(), null_point);
 
-				std::for_each(std::execution::par, indexes_iterators.begin(), indexes_iterators.end(),
+				std::for_each(indexes_iterators.begin(), indexes_iterators.end(),
 					[&](int i) {
 						olc::vd2d intersection_point;
 						CollisionInfo collision_info = RayVsSurface(first_ray, surfaces[i], intersection_point);
@@ -509,6 +512,7 @@ public:
 							intersections_per_surface[i] = intersection_point;
 						}
 					});
+
 
 				vector<olc::vd2d> intersections;
 				vector<int> indexes;
