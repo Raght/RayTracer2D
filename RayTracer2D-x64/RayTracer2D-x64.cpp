@@ -149,9 +149,11 @@ private:
 
 
 	bool debug_mode = false;
-	bool debug_UI_show_surface_points_positions = false;
+	bool debug_UI_show_surface_points_positions = true;
 	bool debug_UI_show_intersections_positions = true;
 	olc::vi2d debug_UI_intersections_screen_position;
+
+	bool surfaces_stress_test = true;
 
 	
 	Ray light_ray;
@@ -223,36 +225,39 @@ public:
 		UI_scale = max(int((double)ScreenWidth() / 640), 1);
 		UI_character_size = 8 * UI_scale;
 
-		int max_surfaces = 16000;
-		int surfaces_counter = 0;
-		int offset_x = 100;
-		int offset_y = 100;
-
-		int rect_offset_x = 5;
-		int rect_offset_y = 20;
-		int height = 30;
-		olc::vd2d point = { double(offset_x + rect_offset_x), (double)height };
-		olc::vd2d size = { double(ScreenWidth() - 2 * offset_x - 2 * rect_offset_x), double(offset_y - height - rect_offset_y) };
-
-		for (int y1 = ScreenHeight() - offset_y; y1 > offset_y && surfaces_counter < max_surfaces; y1--)
+		if (surfaces_stress_test)
 		{
-			for (int y2 = ScreenHeight() - offset_y; y2 > offset_y && surfaces_counter < max_surfaces; y2--)
+			int max_surfaces = 4000;
+			int surfaces_counter = 0;
+			int offset_x = 100;
+			int offset_y = 100;
+
+			int rect_offset_x = 5;
+			int rect_offset_y = 20;
+			int height = 30;
+			olc::vd2d point = { double(offset_x + rect_offset_x), (double)height };
+			olc::vd2d size = { double(ScreenWidth() - 2 * offset_x - 2 * rect_offset_x), double(offset_y - height - rect_offset_y) };
+
+			for (int y1 = ScreenHeight() - offset_y; y1 > offset_y && surfaces_counter < max_surfaces; y1--)
 			{
-				surfaces.push_back(Surface({ (double)offset_x, (double)y1 }, { double(ScreenWidth() - offset_x), (double)y2 }, SurfaceType::REFLECTIVE));
-				surfaces_counter++;
+				for (int y2 = ScreenHeight() - offset_y; y2 > offset_y && surfaces_counter < max_surfaces; y2--)
+				{
+					surfaces.push_back(Surface({ (double)offset_x, (double)y1 }, { double(ScreenWidth() - offset_x), (double)y2 }, SurfaceType::REFLECTIVE));
+					surfaces_counter++;
+				}
 			}
+
+			light_ray.origin = point + size.vector_y() / 2 + olc::vd2d(2.0, 0.0);
+
+			max_rays_simulated = 256;
+			rays_simulated = max_rays_simulated;
+
+			surfaces.push_back(Surface(point, point + size.vector_y(), SurfaceType::REFLECTIVE));
+			surfaces.push_back(Surface(point + size.vector_y(), point + size, SurfaceType::REFLECTIVE));
+			surfaces.push_back(Surface(point + size, point + size.vector_x(), SurfaceType::REFLECTIVE));
+			surfaces.push_back(Surface(point + size.vector_x(), point, SurfaceType::REFLECTIVE));
 		}
-		
-		light_ray.origin = point + size.vector_y() / 2 + olc::vd2d(2.0, 0.0);
 
-		max_rays_simulated = 256;
-		rays_simulated = max_rays_simulated;
-
-		surfaces.push_back(Surface(point, point + size.vector_y(), SurfaceType::REFLECTIVE));
-		surfaces.push_back(Surface(point + size.vector_y(), point + size, SurfaceType::REFLECTIVE));
-		surfaces.push_back(Surface(point + size, point + size.vector_x(), SurfaceType::REFLECTIVE));
-		surfaces.push_back(Surface(point + size.vector_x(), point, SurfaceType::REFLECTIVE));
-		
 		return true;
 	}
 
