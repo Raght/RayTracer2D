@@ -20,7 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Collision.h" />
-    <ClInclude Include="CollisionAVX2.h" />
+    <ClInclude Include="CollisionAVX.h" />
     <ClInclude Include="Constants.h" />
     <ClInclude Include="Line.h" />
     <ClInclude Include="Math.h" />
@@ -33,7 +33,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Collision.cpp" />
-    <ClCompile Include="CollisionAVX2.cpp" />
+    <ClCompile Include="CollisionAVX.cpp" />
     <ClCompile Include="Line.cpp" />
     <ClCompile Include="Math.cpp" />
     <ClCompile Include="Physics.cpp" />

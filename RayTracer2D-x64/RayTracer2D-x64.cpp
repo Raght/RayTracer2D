@@ -13,7 +13,7 @@
 #include "Surface.h"
 #include "Range.h"
 #include "Constants.h"
-#if AVX
+#if AVX2
 #include "CollisionAVX2.h"
 #endif
 
@@ -152,11 +152,14 @@ private:
 	}
 
 
-	bool debug_mode = true;
-	bool debug_UI_show_first_ray_intersections = true;
-	bool debug_UI_show_surface_points_positions = true;
-	bool debug_UI_show_intersections_positions = true;
+	bool debug_mode = false;
+	bool debug_show_first_ray_intersections = true;
+	bool debug_UI_show_first_ray_intersections_positions = false;
+	bool debug_UI_show_surface_points_positions = false;
+	bool debug_UI_show_intersections_positions = false;
 	olc::vi2d debug_UI_intersections_screen_position;
+
+	vector<olc::vd2d> debug_first_ray_intersections;
 
 	bool surfaces_stress_test = true;
 
@@ -248,14 +251,14 @@ public:
 			olc::vd2d point = { double(offset_x + rect_offset_x), (double)height };
 			olc::vd2d size = { double(ScreenWidth() - 2 * offset_x - 2 * rect_offset_x), double(offset_y - height - rect_offset_y) };
 
-			//for (int y1 = ScreenHeight() - offset_y; y1 > offset_y && surfaces_counter < max_surfaces; y1--)
-			//{
-			//	for (int y2 = ScreenHeight() - offset_y; y2 > offset_y && surfaces_counter < max_surfaces; y2--)
-			//	{
-			//		surfaces.push_back(Surface({ (double)offset_x, (double)y1 }, { double(ScreenWidth() - offset_x), (double)y2 }, SurfaceType::REFLECTIVE));
-			//		surfaces_counter++;
-			//	}
-			//}
+			for (int y1 = ScreenHeight() - offset_y; y1 > offset_y && surfaces_counter < max_surfaces; y1--)
+			{
+				for (int y2 = ScreenHeight() - offset_y; y2 > offset_y && surfaces_counter < max_surfaces; y2--)
+				{
+					surfaces.push_back(Surface({ (double)offset_x, (double)y1 }, { double(ScreenWidth() - offset_x), (double)y2 }, SurfaceType::REFLECTIVE));
+					surfaces_counter++;
+				}
+			}
 
 			//light_ray.origin = point + size.vector_y() / 2 + olc::vd2d(2.0, 0.0);
 			//
@@ -565,29 +568,42 @@ public:
 				vector<int> indexes;
 #if AVX
 
-				int surfaces_to_add = (4 - surfaces.size() % 4) % 4;
-				if (surfaces_to_add != 0)
-				{
-					olc::vd2d surface_p1 = first_ray.origin;
-					olc::vd2d surface_p2 = first_ray.EndPoint();
-					olc::vd2d difference = surface_p2 - surface_p1;
-
-					olc::vd2d normal_unnormalized = { -difference.y, difference.x };
-
-					surface_p1 += normal_unnormalized;
-					surface_p2 += normal_unnormalized;
-
-					for (int i = 0; i < surfaces_to_add; i++)
-					{
-						surfaces.push_back(Surface(surface_p1, surface_p2));
-					}
-				}
+				//int surfaces_to_add = (4 - surfaces.size() % 4) % 4;
+				//if (surfaces_to_add != 0)
+				//{
+				//	olc::vd2d surface_p1 = first_ray.origin;
+				//	olc::vd2d surface_p2 = first_ray.EndPoint();
+				//	olc::vd2d difference = surface_p2 - surface_p1;
+				//
+				//	olc::vd2d normal_unnormalized = { -difference.y, difference.x };
+				//
+				//	surface_p1 += normal_unnormalized;
+				//	surface_p2 += normal_unnormalized;
+				//
+				//	for (int i = 0; i < surfaces_to_add; i++)
+				//	{
+				//		surfaces.push_back(Surface(surface_p1, surface_p2));
+				//	}
+				//}
 
 				for (int i = 0; i < surfaces.size(); i += 4)
 				{
 					vector<olc::vd2d> intersection_points(4);
-					vector<CollisionInfo> collision_infos = _Ray1VsSurface4(first_ray, surfaces, i, intersection_points);
-					for (int j = 0; j < 4; j++)
+					vector<CollisionInfo> collision_infos;
+					if (surfaces.size() - i >= 4)
+					{
+						collision_infos = _Ray1VsSurface4(first_ray, surfaces, i, intersection_points);
+					}
+					else
+					{
+						intersection_points.resize(surfaces.size() % 4);
+						for (int j = 0; j < surfaces.size() % 4; j++)
+						{
+							collision_infos.push_back(RayVsSurface(first_ray, surfaces[i + j], intersection_points[j]));
+						}
+					}
+
+					for (int j = 0; j < intersection_points.size(); j++)
 					{
 						if ((collision_infos[j].intersect || collision_infos[j].coincide) && nearest_surface != surfaces[i + j])
 						{
@@ -597,12 +613,11 @@ public:
 					}
 				}
 
-
-				for (int i = surfaces.size() - 1; i > surfaces.size() - 1 - surfaces_to_add; i--)
-				{
-					surfaces.erase(surfaces.begin() + i);
-				}
-#elif
+				//for (int i = 1; i <= surfaces_to_add; i++)
+				//{
+				//	surfaces.erase(surfaces.end() - i);
+				//}
+#else
 				for (int i = 0; i < surfaces.size(); i++)
 				{
 					olc::vd2d intersection_point;
@@ -632,6 +647,11 @@ public:
 				{
 					DrawRay(first_ray);
 					break;
+				}
+
+				if (debug_mode && debug_show_first_ray_intersections && index_ray_simulated == 0)
+				{
+					debug_first_ray_intersections = intersections;
 				}
 
 				olc::vd2d closest_intersection = intersections[0];
@@ -738,6 +758,23 @@ public:
 		if (first_point_constructed && !is_cutting_during_construction)
 			DrawSurface(surface_in_construction);
 
+		if (debug_mode && debug_show_first_ray_intersections)
+		{
+			for (olc::vd2d& intersection : debug_first_ray_intersections)
+			{
+				FillCircle(ToScreenSpace(intersection), 3, olc::CYAN);
+
+				if (debug_UI_show_first_ray_intersections_positions)
+				{
+					string x = to_string(intersection.x);
+					string y = to_string(intersection.y);
+					DrawStringBottomLeftCorner(ToScreenSpace(intersection), x + ' ' + y, olc::CYAN);
+				}
+			}
+
+			debug_first_ray_intersections.clear();
+		}
+
 		if (nearest_point_found)
 		{
 			FillCircle(ToScreenSpace(point_to_construct), point_radius, nearest_point_snap_point_color);
@@ -822,102 +859,6 @@ int main()
 	cout << "3     854x480     2x2        \n";
 	cout << "4     640x360     2x2        \n";
 	cout << "5     Custom      Custom     \n";
-
-	double a = INFINITY;
-	cout << a << '\n';
-	double* ptr_double = &a;
-	int64_t* ptr_int = (int64_t*)ptr_double;
-	int64_t a_bit = *ptr_int;
-	
-	cout << a_bit << '\n';
-	for (int64_t i = 63; i >= 0; i--)
-	{
-		int64_t bit = (a_bit & (1ll << i)) >> i;
-		cout << bit;
-	}
-	cout << '\n';
-
-	cout << (double)INFINITY << '\n';
-	cout << (double)-INFINITY << '\n';
-
-	cout << '\n';
-
-	__m256d _minus_one, _MINUS_EPSILON, _EPSILON, _MINUS_INFINITY, _INFINITY;
-
-	_minus_one = _mm256_set1_pd(1.0);
-	_MINUS_EPSILON = _mm256_set1_pd(-EPSILON);
-	_EPSILON = _mm256_set1_pd(EPSILON);
-	_MINUS_INFINITY = _mm256_set1_pd((double)-INFINITY);
-	_INFINITY = _mm256_set1_pd((double)INFINITY);
-
-	for (int j = 0; j < 4; j++)
-	{
-		for (int64_t i = 63; i >= 0; i--)
-		{
-			int bit = (*(uint64_t*)(double*)&_minus_one.m256d_f64[j] & (1ll << i)) >> i;
-			cout << bit;
-		}
-		cout << '\n';
-	}
-
-	__m256d _minus_one_plus_epsilon = _mm256_add_pd(_minus_one, _EPSILON);
-
-	for (int j = 0; j < 4; j++)
-	{
-		for (int64_t i = 63; i >= 0; i--)
-		{
-			int bit = (*(uint64_t*)(double*)&_minus_one_plus_epsilon.m256d_f64[j] & (1ll << i)) >> i;
-			cout << bit;
-		}
-		cout << '\n';
-	}
-
-	cout << '\n';
-
-	double minus_one = -1.0;
-	double minus_one_plus_epsilon = minus_one + EPSILON;
-	for (int64_t i = 63; i >= 0; i--)
-	{
-		int bit = (*(uint64_t*)(double*)&minus_one & (1ll << i)) >> i;
-		cout << bit;
-	}
-	cout << '\n';
-	for (int64_t i = 63; i >= 0; i--)
-	{
-		int bit = (*(uint64_t*)(double*)&minus_one_plus_epsilon & (1ll << i)) >> i;
-		cout << bit;
-	}
-	cout << '\n';
-
-	std::setprecision(12);
-	cout << _minus_one.m256d_f64[0] << ' ' << minus_one << ' ' << _minus_one_plus_epsilon.m256d_f64[0] << ' ' << minus_one_plus_epsilon << '\n';
-	
-	__m256d s = _mm256_cmp_pd(_MINUS_EPSILON, _minus_one, _CMP_LT_OQ);
-
-	for (int j = 0; j < 4; j++)
-	{
-		for (int64_t i = 63; i >= 0; i--)
-		{
-			int bit = (*(uint64_t*)(double*)&s.m256d_f64[j] & (1ll << i)) >> i;
-			cout << bit;
-		}
-		cout << '\n';
-	}
-
-	s = _mm256_cmp_pd(_minus_one, _EPSILON, _CMP_LT_OQ);
-
-	for (int j = 0; j < 4; j++)
-	{
-		for (int64_t i = 63; i >= 0; i--)
-		{
-			int bit = (*(uint64_t*)(double*)&s.m256d_f64[j] & (1ll << i)) >> i;
-			cout << bit;
-		}
-		cout << '\n';
-	}
-	cout << '\n';
-
-
 
 	while (true)
 	{

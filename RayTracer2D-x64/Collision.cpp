@@ -138,6 +138,12 @@ CollisionInfo LineVsLine(const Line& line1, const Line& line2, olc::vd2d& inters
 				y0 = a1 * x0 + b1
 			*/
 
+			if (Equal(a1, a2))
+			{
+				bool intersect_and_coincide = Equal(b1, b2);
+				return CollisionInfo(intersect_and_coincide, intersect_and_coincide);
+			}
+
 			double x0 = (b2 - b1) / (a1 - a2);
 			double y0 = a1 * x0 + b1;
 

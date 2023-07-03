@@ -45,7 +45,7 @@
     <ClInclude Include="RangeIterator.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="CollisionAVX2.h">
+    <ClInclude Include="CollisionAVX.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>
@@ -77,7 +77,7 @@
     <ClCompile Include="RangeIterator.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="CollisionAVX2.cpp">
+    <ClCompile Include="CollisionAVX.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>

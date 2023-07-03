@@ -2,6 +2,6 @@
 #include "olcPixelGameEngine.h"
 
 
-#define MT false
-#define MT_RANGE false
-#define AVX true
+#define MT 0
+#define MT_RANGE 0
+#define AVX 1
