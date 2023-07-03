@@ -161,7 +161,8 @@ private:
 
 	vector<olc::vd2d> debug_first_ray_intersections;
 
-	bool surfaces_stress_test = true;
+	bool surfaces_stress_test1 = false;
+	bool surfaces_stress_test2 = true;
 
 	
 	Ray light_ray;
@@ -238,11 +239,11 @@ public:
 			min_rays_simulated = 1;
 		}
 
-		if (surfaces_stress_test)
+		if (surfaces_stress_test1 || surfaces_stress_test2)
 		{
-			int max_surfaces = 1000;
+			int max_surfaces = 4000;
 			int surfaces_counter = 0;
-			int offset_x = 100;
+			int offset_x = 200;
 			int offset_y = 100;
 
 			int rect_offset_x = 5;
@@ -251,13 +252,35 @@ public:
 			olc::vd2d point = { double(offset_x + rect_offset_x), (double)height };
 			olc::vd2d size = { double(ScreenWidth() - 2 * offset_x - 2 * rect_offset_x), double(offset_y - height - rect_offset_y) };
 
-			for (int y1 = ScreenHeight() - offset_y; y1 > offset_y && surfaces_counter < max_surfaces; y1--)
+			if (surfaces_stress_test1)
 			{
-				for (int y2 = ScreenHeight() - offset_y; y2 > offset_y && surfaces_counter < max_surfaces; y2--)
+				for (int y1 = ScreenHeight() - offset_y; y1 > offset_y && surfaces_counter < max_surfaces; y1--)
 				{
-					surfaces.push_back(Surface({ (double)offset_x, (double)y1 }, { double(ScreenWidth() - offset_x), (double)y2 }, SurfaceType::REFLECTIVE));
-					surfaces_counter++;
+					for (int y2 = ScreenHeight() - offset_y; y2 > offset_y && surfaces_counter < max_surfaces; y2--)
+					{
+						surfaces.push_back(Surface({ (double)offset_x, (double)y1 }, { double(ScreenWidth() - offset_x), (double)y2 }, SurfaceType::REFLECTIVE));
+						surfaces_counter++;
+					}
 				}
+			}
+			else if (surfaces_stress_test2)
+			{
+				for (int y = ScreenHeight() - offset_y; y > offset_y && surfaces_counter < max_surfaces; y--)
+				{
+					for (int x = offset_x; x < ScreenWidth() - offset_x && surfaces_counter < max_surfaces; x++)
+					{
+						surfaces.push_back(Surface({ (double)x, (double)y }, { double(x + 1), (double)y }, SurfaceType::REFLECTIVE));
+						surfaces_counter++;
+					}
+				}
+				//for (int y1 = ScreenHeight() - offset_y; y1 > offset_y && surfaces_counter < max_surfaces; y1--)
+				//{
+				//	for (int y2 = ScreenHeight() - offset_y; y2 > offset_y && surfaces_counter < max_surfaces; y2--)
+				//	{
+				//		surfaces.push_back(Surface({ (double)offset_x, (double)y1 }, { double(ScreenWidth() - offset_x), (double)y2 }, SurfaceType::REFLECTIVE));
+				//		surfaces_counter++;
+				//	}
+				//}
 			}
 
 			light_ray.origin = point + size.vector_y() / 2 + olc::vd2d(2.0, 0.0);
