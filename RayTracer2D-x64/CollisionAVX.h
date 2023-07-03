@@ -9,8 +9,8 @@
 
 struct CollisionInfoAVXRegisters
 {
-	__m256i intersect;
-	__m256i coincide;
+	__m256d _intersect = _mm256_setzero_pd();
+	__m256d _coincide = _mm256_setzero_pd();
 };
 
-std::vector<CollisionInfo> _Ray1VsSurface4(const Ray& ray1, const std::vector<Surface>& lines2, int index_first_surface, std::vector<olc::vd2d>& intersectionPoints);
+CollisionInfoAVXRegisters _Ray1VsSurface4(const Ray& ray1, const std::vector<Surface>& lines2, int index_first_surface, __m256d& _inter_x, __m256d& _inter_y);

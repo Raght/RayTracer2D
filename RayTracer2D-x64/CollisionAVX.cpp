@@ -1,7 +1,7 @@
 #include "CollisionAVX.h"
 
 
-std::vector<CollisionInfo> _Ray1VsSurface4(const Ray& ray1, const std::vector<Surface>& surfaces2, int index_first_surface, std::vector<olc::vd2d>& intersectionPoints)
+CollisionInfoAVXRegisters _Ray1VsSurface4(const Ray& ray1, const std::vector<Surface>& surfaces2, int index_first_surface, __m256d& _inter_x, __m256d& _inter_y)
 {
 	/*
 		{ a1 * x + b1 = y
@@ -81,8 +81,24 @@ std::vector<CollisionInfo> _Ray1VsSurface4(const Ray& ray1, const std::vector<Su
 	_l1vertical = _mm256_castpd_si256(_a1eqINF_mask);
 	_l2vertical = _mm256_castpd_si256(_a2eqINF_mask);
 
+	CollisionInfoAVXRegisters collision_info;
+	__m256d _first_mask, _second_mask, _third_mask, _fourth_mask;
 
-	std::vector<CollisionInfo> collision_infos(4);
+	uint64_t all_ones_int = UINT64_MAX;
+	double all_ones = *(double*)(uint64_t*)&all_ones_int;
+
+	_first_mask  = _mm256_set_pd(all_ones, 0, 0, 0);
+	_second_mask = _mm256_set_pd(0, all_ones, 0, 0);
+	_third_mask  = _mm256_set_pd(0, 0, all_ones, 0);
+	_fourth_mask = _mm256_set_pd(0, 0, 0, all_ones);
+
+	_inter_x = _mm256_setzero_pd();
+	_inter_y = _mm256_setzero_pd();
+
+	//double x0_1 = 0, x0_2 = 0, x0_3 = 0, x0_4 = 0;
+	//double y0_1 = 0, y0_2 = 0, y0_3 = 0, y0_4 = 0;
+	//bool intersect1, intersect2, intersect3, intersect4;
+	//bool coincide1, coincide2, coincide3, coincide4;
 
 	for (int i = 0; i < 4; i++)
 	{
@@ -95,22 +111,38 @@ std::vector<CollisionInfo> _Ray1VsSurface4(const Ray& ray1, const std::vector<Su
 		double a2 = _a2.m256d_f64[3 - i];
 		double b1 = _b1.m256d_f64[3 - i];
 		double b2 = _b2.m256d_f64[3 - i];
-		olc::vd2d& intersection_point = intersectionPoints[i];
-		double& x0 = intersection_point.x, & y0 = intersection_point.y;
-		CollisionInfo& collision_info = collision_infos[i];
+		double x0 = 0, y0 = 0;
+		__m256d& _index_mask = _first_mask;
+		if (i == 1)
+		{
+			_index_mask = _second_mask;
+		}
+		else if (i == 2)
+		{
+			_index_mask = _third_mask;
+		}
+		else if (i == 3)
+		{
+			_index_mask = _fourth_mask;
+		}
+			
+
+		bool intersect, coincide;
 
 		if (line1_horizontal)
 		{
 			if (line2_horizontal)
 			{
 				bool intersect_and_coincide = Equal(ray1.origin.y, line2.p1.y);
-				collision_info = CollisionInfo(intersect_and_coincide, intersect_and_coincide);
+				intersect = intersect_and_coincide;
+				coincide = intersect_and_coincide;
 			}
 			else if (line2_vertical)
 			{
 				x0 = line2.p1.x;
 				y0 = ray1.origin.y;
-				collision_info = CollisionInfo(true, false);
+				intersect = true;
+				coincide = false;
 			}
 			else
 			{
@@ -125,7 +157,8 @@ std::vector<CollisionInfo> _Ray1VsSurface4(const Ray& ray1, const std::vector<Su
 				x0 = (ray1.origin.y - b2) / a2;
 				y0 = ray1.origin.y;
 
-				collision_info = CollisionInfo(true, false);
+				intersect = true;
+				coincide = false;
 			}
 		}
 		else if (line1_vertical)
@@ -134,12 +167,14 @@ std::vector<CollisionInfo> _Ray1VsSurface4(const Ray& ray1, const std::vector<Su
 			{
 				x0 = ray1.origin.x;
 				y0 = line2.p1.y;
-				collision_info = CollisionInfo(true, false);
+				intersect = true;
+				coincide = false;
 			}
 			else if (line2_vertical)
 			{
 				bool intersect_and_coincide = Equal(ray1.origin.x, line2.p1.x);
-				collision_info = CollisionInfo(intersect_and_coincide, intersect_and_coincide);
+				intersect = intersect_and_coincide;
+				coincide = intersect_and_coincide;
 			}
 			else
 			{
@@ -154,7 +189,8 @@ std::vector<CollisionInfo> _Ray1VsSurface4(const Ray& ray1, const std::vector<Su
 				x0 = ray1.origin.x;
 				y0 = a2 * ray1.origin.x + b2;
 
-				collision_info = CollisionInfo(true, false);
+				intersect = true;
+				coincide = false;
 			}
 		}
 		else
@@ -172,7 +208,8 @@ std::vector<CollisionInfo> _Ray1VsSurface4(const Ray& ray1, const std::vector<Su
 				x0 = (line2.p1.y - b1) / a1;
 				y0 = line2.p1.y;
 
-				collision_info = CollisionInfo(true, false);
+				intersect = true;
+				coincide = false;
 			}
 			else if (line2_vertical)
 			{
@@ -187,7 +224,8 @@ std::vector<CollisionInfo> _Ray1VsSurface4(const Ray& ray1, const std::vector<Su
 				x0 = line2.p1.x;
 				y0 = a1 * line2.p1.x + b1;
 
-				collision_info = CollisionInfo(true, false);
+				intersect = true;
+				coincide = false;
 			}
 			else
 			{
@@ -202,46 +240,34 @@ std::vector<CollisionInfo> _Ray1VsSurface4(const Ray& ray1, const std::vector<Su
 				if (Equal(a1, a2))
 				{
 					bool intersect_and_coincide = Equal(b1, b2);
-					collision_info = CollisionInfo(intersect_and_coincide, intersect_and_coincide);
+					intersect = intersect_and_coincide;
+					coincide = intersect_and_coincide;
 				}
 				else
 				{
 					x0 = (b2 - b1) / (a1 - a2);
 					y0 = a1 * x0 + b1;
 
-					collision_info = CollisionInfo(true, false);
+					intersect = true;
+					coincide = false;
 				}
 			}
 		}
+
+		double intersect_mask_double = (intersect) ? all_ones : 0.0;
+		double coincide_mask_double = (coincide) ? all_ones : 0.0;
+		__m256d _intersect_mask = _mm256_set1_pd(intersect_mask_double);
+		__m256d _intersect_i = _mm256_and_pd(_intersect_mask, _index_mask);
+		__m256d _coincide_mask = _mm256_set1_pd(coincide_mask_double);
+		__m256d _coincide_i = _mm256_and_pd(_coincide_mask, _index_mask);
+		collision_info._intersect = _mm256_or_pd(collision_info._intersect, _intersect_i);
+		collision_info._coincide = _mm256_or_pd(collision_info._coincide, _coincide_i);
+
+		__m256d _inter_x_mask = _mm256_and_pd(_mm256_set1_pd(x0), _index_mask);
+		_inter_x = _mm256_or_pd(_inter_x, _inter_x_mask);
+		__m256d _inter_y_mask = _mm256_and_pd(_mm256_set1_pd(y0), _index_mask);
+		_inter_y = _mm256_or_pd(_inter_y, _inter_y_mask);
 	}
-
-	__m256d _interx, _intery;
-	_interx = _mm256_set_pd(
-		intersectionPoints[0].x,
-		intersectionPoints[1].x,
-		intersectionPoints[2].x,
-		intersectionPoints[3].x
-	);
-	_intery = _mm256_set_pd(
-		intersectionPoints[0].y,
-		intersectionPoints[1].y,
-		intersectionPoints[2].y,
-		intersectionPoints[3].y
-	);
-
-	CollisionInfoAVXRegisters collision_infos_registers;
-	collision_infos_registers.intersect = _mm256_set_epi64x(
-		collision_infos[0].intersect,
-		collision_infos[1].intersect,
-		collision_infos[2].intersect,
-		collision_infos[3].intersect
-	);
-	collision_infos_registers.coincide = _mm256_set_epi64x(
-		collision_infos[0].coincide,
-		collision_infos[1].coincide,
-		collision_infos[2].coincide,
-		collision_infos[3].coincide
-	);
 
 	double ray1_limit_dot_product = 0.0;
 
@@ -264,14 +290,14 @@ std::vector<CollisionInfo> _Ray1VsSurface4(const Ray& ray1, const std::vector<Su
 	_l2_limit_dot_product = _mm256_add_pd(_l2extension, _l2length);
 	_l2_limit_dot_product = _mm256_mul_pd(_l2_limit_dot_product, _l2extension);
 
-	_dx_l1p1_to_inter = _mm256_sub_pd(_interx, _l1p1x);
-	_dx_l1p2_to_inter = _mm256_sub_pd(_interx, _l1p2x);
-	_dx_l2p1_to_inter = _mm256_sub_pd(_interx, _l2p1x);
-	_dx_l2p2_to_inter = _mm256_sub_pd(_interx, _l2p2x);
-	_dy_l1p1_to_inter = _mm256_sub_pd(_intery, _l1p1y);
-	_dy_l1p2_to_inter = _mm256_sub_pd(_intery, _l1p2y);
-	_dy_l2p1_to_inter = _mm256_sub_pd(_intery, _l2p1y);
-	_dy_l2p2_to_inter = _mm256_sub_pd(_intery, _l2p2y);
+	_dx_l1p1_to_inter = _mm256_sub_pd(_inter_x, _l1p1x);
+	_dx_l1p2_to_inter = _mm256_sub_pd(_inter_x, _l1p2x);
+	_dx_l2p1_to_inter = _mm256_sub_pd(_inter_x, _l2p1x);
+	_dx_l2p2_to_inter = _mm256_sub_pd(_inter_x, _l2p2x);
+	_dy_l1p1_to_inter = _mm256_sub_pd(_inter_y, _l1p1y);
+	_dy_l1p2_to_inter = _mm256_sub_pd(_inter_y, _l1p2y);
+	_dy_l2p1_to_inter = _mm256_sub_pd(_inter_y, _l2p1y);
+	_dy_l2p2_to_inter = _mm256_sub_pd(_inter_y, _l2p2y);
 
 	__m256d _product_x_l1_to_inter, _product_y_l1_to_inter;
 	__m256d _product_x_l2_to_inter, _product_y_l2_to_inter;
@@ -290,21 +316,11 @@ std::vector<CollisionInfo> _Ray1VsSurface4(const Ray& ray1, const std::vector<Su
 	_point_lies_on_l2 = _mm256_cmp_pd(_l2_dot_product, _l2_limit_dot_product, _CMP_LT_OQ);
 
 	__m256d _inter_exists_and_lies_on_lines;
-	_inter_exists_and_lies_on_lines = _mm256_and_pd(_mm256_castsi256_pd(collision_infos_registers.intersect), _point_lies_on_l1);
+	_inter_exists_and_lies_on_lines = _mm256_and_pd(collision_info._intersect, _point_lies_on_l1);
 	_inter_exists_and_lies_on_lines = _mm256_and_pd(_inter_exists_and_lies_on_lines, _point_lies_on_l2);
-	collision_infos_registers.intersect = _mm256_castpd_si256(_mm256_or_pd(_mm256_castsi256_pd(collision_infos_registers.coincide), _inter_exists_and_lies_on_lines));
+	collision_info._intersect = _mm256_or_pd(collision_info._coincide, _inter_exists_and_lies_on_lines);
 
-	collision_infos[0].intersect = collision_infos_registers.intersect.m256i_i64[3];
-	collision_infos[1].intersect = collision_infos_registers.intersect.m256i_i64[2];
-	collision_infos[2].intersect = collision_infos_registers.intersect.m256i_i64[1];
-	collision_infos[3].intersect = collision_infos_registers.intersect.m256i_i64[0];
-
-	collision_infos[0].coincide = collision_infos_registers.coincide.m256i_i64[3];
-	collision_infos[1].coincide = collision_infos_registers.coincide.m256i_i64[2];
-	collision_infos[2].coincide = collision_infos_registers.coincide.m256i_i64[1];
-	collision_infos[3].coincide = collision_infos_registers.coincide.m256i_i64[0];
-
-	return collision_infos;
+	return collision_info;
 
 	//CollisionInfo collision_info = LineVsLine(surface1, surface2, intersectionPoint);
 	//

@@ -240,7 +240,7 @@ public:
 
 		if (surfaces_stress_test)
 		{
-			int max_surfaces = 4000;
+			int max_surfaces = 1000;
 			int surfaces_counter = 0;
 			int offset_x = 100;
 			int offset_y = 100;
@@ -581,29 +581,40 @@ public:
 
 				for (int i = 0; i < surfaces.size(); i += 4)
 				{
-					vector<olc::vd2d> intersection_points(4);
-					vector<CollisionInfo> collision_infos;
 					if (surfaces.size() - i >= 4)
 					{
-						collision_infos = _Ray1VsSurface4(first_ray, surfaces, i, intersection_points);
+						__m256d _inter_x, _inter_y;
+						CollisionInfoAVXRegisters collision_infos = _Ray1VsSurface4(first_ray, surfaces, i, _inter_x, _inter_y);
+
+						for (int j = 0; j < 4; j++)
+						{
+							bool intersect = bool(collision_infos._intersect.m256d_f64[3 - j]);
+							bool coincide = bool(collision_infos._coincide.m256d_f64[3 - j]);
+							if ((intersect || coincide) && nearest_surface != surfaces[i + j])
+							{
+								intersections.push_back(olc::vd2d(_inter_x.m256d_f64[3 - j], _inter_y.m256d_f64[3 - j]));
+								indexes.push_back(i + j);
+							}
+						}
 					}
 					else
 					{
-						intersection_points.resize(surfaces.size() % 4);
+						vector<olc::vd2d> intersection_points(surfaces.size() % 4);
+						vector<CollisionInfo> collision_infos;
 						for (int j = 0; j < surfaces.size() % 4; j++)
 						{
 							collision_infos.push_back(RayVsSurface(first_ray, surfaces[i + j], intersection_points[j]));
 						}
-					}
-
-					for (int j = 0; j < intersection_points.size(); j++)
-					{
-						if ((collision_infos[j].intersect || collision_infos[j].coincide) && nearest_surface != surfaces[i + j])
+						for (int j = 0; j < intersection_points.size(); j++)
 						{
-							intersections.push_back(intersection_points[j]);
-							indexes.push_back(i + j);
+							if ((collision_infos[j].intersect || collision_infos[j].coincide) && nearest_surface != surfaces[i + j])
+							{
+								intersections.push_back(intersection_points[j]);
+								indexes.push_back(i + j);
+							}
 						}
 					}
+
 				}
 
 				//for (int i = 1; i <= surfaces_to_add; i++)
@@ -624,24 +635,6 @@ public:
 #endif
 
 #endif
-				if (debug_mode && debug_show_first_ray_intersections && index_ray_simulated == 0)
-				{
-					DrawStringUpRightCorner({ ScreenWidth(), 5 * UI_character_size}, "INTERSECTION POINTS COUNT: " + to_string(intersections.size()), UI_text_color);
-					for (olc::vd2d intersection_point : intersections)
-					{
-						FillCircle(ToScreenSpace(intersection_point), 5, olc::CYAN);
-						
-						if (debug_UI_show_first_ray_intersections_positions)
-						{
-							string x = to_string(intersection_point.x);
-							string y = to_string(intersection_point.y);
-							DrawStringBottomLeftCorner(ToScreenSpace(intersection_point), x + ' ' + y, olc::CYAN);
-						}
-					}
-
-					intersections.clear();
-				}
-
 				if (intersections.size() == 0)
 				{
 					DrawRay(first_ray);
@@ -842,6 +835,22 @@ public:
 };
 
 
+void PrintBitRepresentation(double num)
+{
+	uint64_t num_as_int = *(uint64_t*)(double*)&num;
+	for (int64_t i = 63; i >= 0; i--)
+	{
+		int bit = ((num_as_int & (1ull << (uint64_t)i)) >> (uint64_t)i);
+		cout << bit;
+	}
+	cout << '\n';
+}
+
+double ConvertBitIntegerToDouble(uint64_t num)
+{
+	return *(double*)(uint64_t*)&num;
+}
+
 int main()
 {
 	olc::GraphicsMode graphics_mode;
@@ -858,6 +867,13 @@ int main()
 	cout << "3     854x480     2x2        \n";
 	cout << "4     640x360     2x2        \n";
 	cout << "5     Custom      Custom     \n";
+
+	cout << sizeof(CollisionInfo) << '\n';
+
+	PrintBitRepresentation(-1.0);
+	PrintBitRepresentation(0.0);
+
+	cout << ConvertBitIntegerToDouble(UINT64_MAX) << '\n';
 
 	while (true)
 	{
