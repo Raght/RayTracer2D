@@ -260,22 +260,15 @@ public:
 				}
 			}
 
-			//light_ray.origin = point + size.vector_y() / 2 + olc::vd2d(2.0, 0.0);
-			//
-			//max_rays_simulated = 256;
-			//rays_simulated = max_rays_simulated;
-			//
-			//surfaces.push_back(Surface(point, point + size.vector_y(), SurfaceType::REFLECTIVE));
-			//surfaces.push_back(Surface(point + size.vector_y(), point + size, SurfaceType::REFLECTIVE));
-			//surfaces.push_back(Surface(point + size, point + size.vector_x(), SurfaceType::REFLECTIVE));
-			//surfaces.push_back(Surface(point + size.vector_x(), point, SurfaceType::REFLECTIVE));
-
-			light_ray.origin = { 1, 1 };
-
-			surfaces.push_back(Surface({ 0, 0 }, { 0, 100 }, SurfaceType::REFLECTIVE));
-			surfaces.push_back(Surface({ 0, 100 }, {100, 100}, SurfaceType::REFLECTIVE));
-			surfaces.push_back(Surface({ 100, 100 }, { 200, 0 }, SurfaceType::REFLECTIVE));
-			surfaces.push_back(Surface({ 200, 0 }, { 0, 0 }, SurfaceType::REFLECTIVE));
+			light_ray.origin = point + size.vector_y() / 2 + olc::vd2d(2.0, 0.0);
+			
+			max_rays_simulated = 256;
+			rays_simulated = max_rays_simulated;
+			
+			surfaces.push_back(Surface(point, point + size.vector_y(), SurfaceType::REFLECTIVE));
+			surfaces.push_back(Surface(point + size.vector_y(), point + size, SurfaceType::REFLECTIVE));
+			surfaces.push_back(Surface(point + size, point + size.vector_x(), SurfaceType::REFLECTIVE));
+			surfaces.push_back(Surface(point + size.vector_x(), point, SurfaceType::REFLECTIVE));
 		}
 
 		return true;
