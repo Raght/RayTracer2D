@@ -13,6 +13,9 @@
 #include "Surface.h"
 #include "Range.h"
 #include "Constants.h"
+#if AVX2
+#include "CollisionAVX2.h"
+#endif
 
 using namespace std;
 
@@ -238,14 +241,14 @@ public:
 			olc::vd2d point = { double(offset_x + rect_offset_x), (double)height };
 			olc::vd2d size = { double(ScreenWidth() - 2 * offset_x - 2 * rect_offset_x), double(offset_y - height - rect_offset_y) };
 
-			for (int y1 = ScreenHeight() - offset_y; y1 > offset_y && surfaces_counter < max_surfaces; y1--)
-			{
-				for (int y2 = ScreenHeight() - offset_y; y2 > offset_y && surfaces_counter < max_surfaces; y2--)
-				{
-					surfaces.push_back(Surface({ (double)offset_x, (double)y1 }, { double(ScreenWidth() - offset_x), (double)y2 }, SurfaceType::REFLECTIVE));
-					surfaces_counter++;
-				}
-			}
+			//for (int y1 = ScreenHeight() - offset_y; y1 > offset_y && surfaces_counter < max_surfaces; y1--)
+			//{
+			//	for (int y2 = ScreenHeight() - offset_y; y2 > offset_y && surfaces_counter < max_surfaces; y2--)
+			//	{
+			//		surfaces.push_back(Surface({ (double)offset_x, (double)y1 }, { double(ScreenWidth() - offset_x), (double)y2 }, SurfaceType::REFLECTIVE));
+			//		surfaces_counter++;
+			//	}
+			//}
 
 			light_ray.origin = point + size.vector_y() / 2 + olc::vd2d(2.0, 0.0);
 
@@ -508,10 +511,8 @@ public:
 		hit_corner = false;
 		if (!is_constructing && !is_cutting)
 		{
-			for (int i = 0; i < rays_simulated; i++)
+			for (int index_ray_simulated = 0; index_ray_simulated < rays_simulated; index_ray_simulated++)
 			{
-#define MT 1
-#define MT_RANGE 1
 #if MT && MT_RANGE
 				Range indexes_iterators(0, surfaces.size());
 #elif MT && !MT_RANGE
@@ -548,7 +549,45 @@ public:
 #else
 				vector<olc::vd2d> intersections;
 				vector<int> indexes;
+#if AVX2
 
+				int surfaces_to_add = (4 - surfaces.size() % 4) % 4;
+				if (surfaces_to_add != 0)
+				{
+					olc::vd2d surface_p1 = first_ray.origin;
+					olc::vd2d surface_p2 = first_ray.EndPoint();
+					olc::vd2d difference = surface_p2 - surface_p1;
+
+					olc::vd2d normal_unnormalized = { -difference.y, difference.x };
+
+					surface_p1 += normal_unnormalized;
+					surface_p2 += normal_unnormalized;
+
+					for (int i = 0; i < surfaces_to_add; i++)
+					{
+						surfaces.push_back(Surface(surface_p1, surface_p2));
+					}
+				}
+
+				for (int i = 0; i < surfaces.size(); i += 4)
+				{
+					vector<olc::vd2d> intersection_points(4);
+					vector<CollisionInfo> collision_infos = _Ray1VsSurface4(first_ray, surfaces, i, intersection_points);
+					for (int j = 0; j < 4; j++)
+					{
+						if ((collision_infos[j].intersect || collision_infos[j].coincide) && nearest_surface != surfaces[i + j])
+						{
+							intersections.push_back(intersection_points[j]);
+							indexes.push_back(i + j);
+						}
+					}
+				}
+
+				for (int i = surfaces.size() - 1; i > surfaces.size() - 1 - surfaces_to_add; i--)
+				{
+					surfaces.erase(surfaces.begin() + i);
+				}
+#elif
 				for (int i = 0; i < surfaces.size(); i++)
 				{
 					olc::vd2d intersection_point;
@@ -559,6 +598,8 @@ public:
 						indexes.push_back(i);
 					}
 				}
+#endif
+
 #endif
 
 				if (intersections.size() == 0)
@@ -627,7 +668,7 @@ public:
 				if (!full_brightness)
 					second_ray.brightness -= 1.0 / rays_simulated;
 
-				if (draw_normals && i != rays_simulated - 1)
+				if (draw_normals && index_ray_simulated != rays_simulated - 1)
 				{
 					DrawNormal(intersection_point, nearest_surface, first_ray);
 
@@ -641,10 +682,10 @@ public:
 
 				if (debug_mode && debug_UI_show_intersections_positions)
 				{
-					if (i == 0)
+					if (index_ray_simulated == 0)
 						debug_UI_intersections_screen_position = olc::vi2d(0, 8 * UI_scale);
 
-					DrawStringUpLeftCorner(debug_UI_intersections_screen_position, "i = " + to_string(i), UI_text_color);
+					DrawStringUpLeftCorner(debug_UI_intersections_screen_position, "i = " + to_string(index_ray_simulated), UI_text_color);
 					debug_UI_intersections_screen_position.y += UI_character_size;
 					for (int j = 0; j < intersections.size(); j++)
 					{
@@ -755,6 +796,102 @@ int main()
 	cout << "3     854x480     2x2        \n";
 	cout << "4     640x360     2x2        \n";
 	cout << "5     Custom      Custom     \n";
+
+	double a = INFINITY;
+	cout << a << '\n';
+	double* ptr_double = &a;
+	int64_t* ptr_int = (int64_t*)ptr_double;
+	int64_t a_bit = *ptr_int;
+	
+	cout << a_bit << '\n';
+	for (int64_t i = 63; i >= 0; i--)
+	{
+		int64_t bit = (a_bit & (1ll << i)) >> i;
+		cout << bit;
+	}
+	cout << '\n';
+
+	cout << (double)INFINITY << '\n';
+	cout << (double)-INFINITY << '\n';
+
+	cout << '\n';
+
+	__m256d _minus_one, _MINUS_EPSILON, _EPSILON, _MINUS_INFINITY, _INFINITY;
+
+	_minus_one = _mm256_set1_pd(1.0);
+	_MINUS_EPSILON = _mm256_set1_pd(-EPSILON);
+	_EPSILON = _mm256_set1_pd(EPSILON);
+	_MINUS_INFINITY = _mm256_set1_pd((double)-INFINITY);
+	_INFINITY = _mm256_set1_pd((double)INFINITY);
+
+	for (int j = 0; j < 4; j++)
+	{
+		for (int64_t i = 63; i >= 0; i--)
+		{
+			int bit = (*(uint64_t*)(double*)&_minus_one.m256d_f64[j] & (1ll << i)) >> i;
+			cout << bit;
+		}
+		cout << '\n';
+	}
+
+	__m256d _minus_one_plus_epsilon = _mm256_add_pd(_minus_one, _EPSILON);
+
+	for (int j = 0; j < 4; j++)
+	{
+		for (int64_t i = 63; i >= 0; i--)
+		{
+			int bit = (*(uint64_t*)(double*)&_minus_one_plus_epsilon.m256d_f64[j] & (1ll << i)) >> i;
+			cout << bit;
+		}
+		cout << '\n';
+	}
+
+	cout << '\n';
+
+	double minus_one = -1.0;
+	double minus_one_plus_epsilon = minus_one + EPSILON;
+	for (int64_t i = 63; i >= 0; i--)
+	{
+		int bit = (*(uint64_t*)(double*)&minus_one & (1ll << i)) >> i;
+		cout << bit;
+	}
+	cout << '\n';
+	for (int64_t i = 63; i >= 0; i--)
+	{
+		int bit = (*(uint64_t*)(double*)&minus_one_plus_epsilon & (1ll << i)) >> i;
+		cout << bit;
+	}
+	cout << '\n';
+
+	std::setprecision(12);
+	cout << _minus_one.m256d_f64[0] << ' ' << minus_one << ' ' << _minus_one_plus_epsilon.m256d_f64[0] << ' ' << minus_one_plus_epsilon << '\n';
+	
+	__m256d s = _mm256_cmp_pd(_MINUS_EPSILON, _minus_one, _CMP_LT_OQ);
+
+	for (int j = 0; j < 4; j++)
+	{
+		for (int64_t i = 63; i >= 0; i--)
+		{
+			int bit = (*(uint64_t*)(double*)&s.m256d_f64[j] & (1ll << i)) >> i;
+			cout << bit;
+		}
+		cout << '\n';
+	}
+
+	s = _mm256_cmp_pd(_minus_one, _EPSILON, _CMP_LT_OQ);
+
+	for (int j = 0; j < 4; j++)
+	{
+		for (int64_t i = 63; i >= 0; i--)
+		{
+			int bit = (*(uint64_t*)(double*)&s.m256d_f64[j] & (1ll << i)) >> i;
+			cout << bit;
+		}
+		cout << '\n';
+	}
+	cout << '\n';
+
+
 
 	while (true)
 	{

@@ -4,6 +4,7 @@
 #include "Ray.h"
 #include "Line.h"
 #include "Surface.h"
+#include "Constants.h"
 
 
 struct CollisionInfo

@@ -2,8 +2,8 @@
 #include "olcPixelGameEngine.h"
 
 
-static double const PI = 3.141592653589793238462643383279;
-static double const EPSILON = 1e-6;
+inline double const PI = 3.141592653589793238462643383279;
+inline double const EPSILON = 1e-6;
 
 bool InRange(double number, double range_min, double range_max);
 

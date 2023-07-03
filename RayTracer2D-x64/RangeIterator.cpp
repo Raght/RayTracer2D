@@ -36,7 +36,7 @@ RangeIterator& RangeIterator::operator++() noexcept
 
 bool RangeIterator::operator==(const RangeIterator& other) const noexcept
 {
-    return i == other.i && elem == other.elem && step == other.step;
+    return i == other.i;
 }
 
 bool RangeIterator::operator!=(const RangeIterator& other) const noexcept
