@@ -273,14 +273,6 @@ public:
 						surfaces_counter++;
 					}
 				}
-				//for (int y1 = ScreenHeight() - offset_y; y1 > offset_y && surfaces_counter < max_surfaces; y1--)
-				//{
-				//	for (int y2 = ScreenHeight() - offset_y; y2 > offset_y && surfaces_counter < max_surfaces; y2--)
-				//	{
-				//		surfaces.push_back(Surface({ (double)offset_x, (double)y1 }, { double(ScreenWidth() - offset_x), (double)y2 }, SurfaceType::REFLECTIVE));
-				//		surfaces_counter++;
-				//	}
-				//}
 			}
 
 			light_ray.origin = point + size.vector_y() / 2 + olc::vd2d(2.0, 0.0);
