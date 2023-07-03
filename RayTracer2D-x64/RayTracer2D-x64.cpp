@@ -13,8 +13,8 @@
 #include "Surface.h"
 #include "Range.h"
 #include "Constants.h"
-#if AVX2
-#include "CollisionAVX2.h"
+#if AVX
+#include "CollisionAVX.h"
 #endif
 
 using namespace std;
@@ -631,16 +631,22 @@ public:
 #endif
 
 #endif
-				if (debug_mode && debug_UI_show_first_ray_intersections && index_ray_simulated == 0)
+				if (debug_mode && debug_show_first_ray_intersections && index_ray_simulated == 0)
 				{
 					DrawStringUpRightCorner({ ScreenWidth(), 5 * UI_character_size}, "INTERSECTION POINTS COUNT: " + to_string(intersections.size()), UI_text_color);
 					for (olc::vd2d intersection_point : intersections)
 					{
 						FillCircle(ToScreenSpace(intersection_point), 5, olc::CYAN);
-						string x = to_string(intersection_point.x);
-						string y = to_string(intersection_point.y);
-						DrawStringBottomLeftCorner(ToScreenSpace(intersection_point), x + ' ' + y, olc::CYAN);
+						
+						if (debug_UI_show_first_ray_intersections_positions)
+						{
+							string x = to_string(intersection_point.x);
+							string y = to_string(intersection_point.y);
+							DrawStringBottomLeftCorner(ToScreenSpace(intersection_point), x + ' ' + y, olc::CYAN);
+						}
 					}
+
+					intersections.clear()
 				}
 
 				if (intersections.size() == 0)
