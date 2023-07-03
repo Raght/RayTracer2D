@@ -20,7 +20,7 @@ std::vector<CollisionInfo> _Ray1VsSurface4(const Ray& ray1, const std::vector<Su
 
 	__m256d _minus_one, _MINUS_EPSILON, _EPSILON, _MINUS_INFINITY, _INFINITY, _MINUS_NAN, _NAN;
 
-	_minus_one = _mm256_set1_pd(1.0);
+	_minus_one = _mm256_set1_pd(-1.0);
 	_MINUS_EPSILON = _mm256_set1_pd(-EPSILON);
 	_EPSILON = _mm256_set1_pd(EPSILON);
 	_MINUS_INFINITY = _mm256_set1_pd((double)-INFINITY);
@@ -79,55 +79,38 @@ std::vector<CollisionInfo> _Ray1VsSurface4(const Ray& ray1, const std::vector<Su
 	_a1eqpINF_mask = (_mm256_cmp_pd(_a1, _INFINITY, _CMP_EQ_OQ));
 	_a2eqmINF_mask = (_mm256_cmp_pd(_a2, _MINUS_INFINITY, _CMP_EQ_OQ));
 	_a2eqpINF_mask = (_mm256_cmp_pd(_a2, _INFINITY, _CMP_EQ_OQ));
-	_a1eqmNAN_mask = (_mm256_cmp_pd(_a1, _MINUS_NAN, _CMP_EQ_OQ));
-	_a1eqpNAN_mask = (_mm256_cmp_pd(_a1, _NAN, _CMP_EQ_OQ));
-	_a2eqmNAN_mask = (_mm256_cmp_pd(_a2, _MINUS_NAN, _CMP_EQ_OQ));
-	_a2eqpNAN_mask = (_mm256_cmp_pd(_a2, _NAN, _CMP_EQ_OQ));
+	//_a1eqmNAN_mask = (_mm256_cmp_pd(_a1, _MINUS_NAN, _CMP_EQ_OQ));
+	//_a1eqpNAN_mask = (_mm256_cmp_pd(_a1, _NAN, _CMP_EQ_OQ));
+	//_a2eqmNAN_mask = (_mm256_cmp_pd(_a2, _MINUS_NAN, _CMP_EQ_OQ));
+	//_a2eqpNAN_mask = (_mm256_cmp_pd(_a2, _NAN, _CMP_EQ_OQ));
 
 	_a1eqINF_mask = _mm256_or_pd(_a1eqmINF_mask, _a1eqpINF_mask);
 	_a2eqINF_mask = _mm256_or_pd(_a2eqmINF_mask, _a2eqpINF_mask);
-	_a1eqNAN_mask = _mm256_or_pd(_a1eqmNAN_mask, _a1eqpNAN_mask);
-	_a2eqNAN_mask = _mm256_or_pd(_a2eqmNAN_mask, _a2eqpNAN_mask);
+	//_a1eqNAN_mask = _mm256_or_pd(_a1eqmNAN_mask, _a1eqpNAN_mask);
+	//_a2eqNAN_mask = _mm256_or_pd(_a2eqmNAN_mask, _a2eqpNAN_mask);
 
-	_l1vertical = _mm256_castpd_si256(_mm256_or_pd(_a1eqINF_mask, _a1eqNAN_mask));
-	_l2vertical = _mm256_castpd_si256(_mm256_or_pd(_a2eqINF_mask, _a2eqNAN_mask));
+	//_l1vertical = _mm256_castpd_si256(_mm256_or_pd(_a1eqINF_mask, _a1eqNAN_mask));
+	//_l2vertical = _mm256_castpd_si256(_mm256_or_pd(_a2eqINF_mask, _a2eqNAN_mask));
 
-	std::vector<double> a1_v = { _a1.m256d_f64[3], _a1.m256d_f64[2], _a1.m256d_f64[1], _a1.m256d_f64[0] };
-	std::vector<double> a2_v = { _a2.m256d_f64[3], _a2.m256d_f64[2], _a2.m256d_f64[1], _a2.m256d_f64[0] };
-	std::vector<double> b1_v = { _b1.m256d_f64[3], _b1.m256d_f64[2], _b1.m256d_f64[1], _b1.m256d_f64[0] };
-	std::vector<double> b2_v = { _b2.m256d_f64[3], _b2.m256d_f64[2], _b2.m256d_f64[1], _b2.m256d_f64[0] };
-	std::vector<bool> line1_horizontal_v = {
-		bool(_l1horizontal.m256i_i64[3]), bool(_l1horizontal.m256i_i64[2]),
-		bool(_l1horizontal.m256i_i64[1]), bool(_l1horizontal.m256i_i64[0])
-	};
-	std::vector<bool> line2_horizontal_v = {
-		bool(_l2horizontal.m256i_i64[3]), bool(_l2horizontal.m256i_i64[2]),
-		bool(_l2horizontal.m256i_i64[1]), bool(_l2horizontal.m256i_i64[0])
-	};
-	std::vector<bool> line1_vertical_v = {
-		bool(_l1vertical.m256i_i64[3]), bool(_l1vertical.m256i_i64[2]),
-		bool(_l1vertical.m256i_i64[1]), bool(_l1vertical.m256i_i64[0])
-	};
-	std::vector<bool> line2_vertical_v = {
-		bool(_l2vertical.m256i_i64[3]), bool(_l2vertical.m256i_i64[2]),
-		bool(_l2vertical.m256i_i64[1]), bool(_l2vertical.m256i_i64[0])
-	};
+	_l1vertical = _mm256_castpd_si256(_a1eqINF_mask);
+	_l2vertical = _mm256_castpd_si256(_a2eqINF_mask);
+
 
 	std::vector<CollisionInfo> collision_infos(4);
 
 	for (int i = 0; i < 4; i++)
 	{
-		bool line1_horizontal = line1_horizontal_v[i];
-		bool line2_horizontal = line2_horizontal_v[i];
-		bool line1_vertical = line1_vertical_v[i];
-		bool line2_vertical = line2_vertical_v[i];
+		bool line1_horizontal = bool(_l1horizontal.m256i_i64[3 - i]);
+		bool line2_horizontal = bool(_l2horizontal.m256i_i64[3 - i]);
+		bool line1_vertical = bool(_l1vertical.m256i_i64[3 - i]);
+		bool line2_vertical = bool(_l2vertical.m256i_i64[3 - i]);
 		const Line& line2 = surfaces2[i];
-		double a1 = a1_v[i];
-		double a2 = a2_v[i];
-		double b1 = b1_v[i];
-		double b2 = b2_v[i];
+		double a1 = _a1.m256d_f64[3 - i];
+		double a2 = _a2.m256d_f64[3 - i];
+		double b1 = _b1.m256d_f64[3 - i];
+		double b2 = _b2.m256d_f64[3 - i];
 		olc::vd2d& intersection_point = intersectionPoints[i];
-		double& x0 = intersection_point.x, y0 = intersection_point.y;
+		double& x0 = intersection_point.x, &y0 = intersection_point.y;
 		CollisionInfo& collision_info = collision_infos[i];
 
 		if (line1_horizontal)
@@ -273,7 +256,7 @@ std::vector<CollisionInfo> _Ray1VsSurface4(const Ray& ray1, const std::vector<Su
 		collision_infos[2].coincide,
 		collision_infos[3].coincide
 	);
-
+	
 	double ray1_limit_dot_product = 0.0;
 	
 	__m256d _l2length;
@@ -285,17 +268,16 @@ std::vector<CollisionInfo> _Ray1VsSurface4(const Ray& ray1, const std::vector<Su
 	__m256d _l1_dot_product, _l2_dot_product;
 	
 	_l1_limit_dot_product = _mm256_set1_pd(ray1_limit_dot_product);
-	_l2length = _mm256_set1_pd(0.0);
-
+	
 	_l2dxsqr = _mm256_mul_pd(_dx2, _dx2);
 	_l2dysqr = _mm256_mul_pd(_dy2, _dy2);
 	_l2length = _mm256_add_pd(_l2dxsqr, _l2dysqr);
 	_l2length = _mm256_sqrt_pd(_l2length);
-
+	
 	_l2extension = _mm256_set_pd(surfaces2[0].extension, surfaces2[1].extension, surfaces2[2].extension, surfaces2[3].extension);
 	_l2_limit_dot_product = _mm256_add_pd(_l2extension, _l2length);
 	_l2_limit_dot_product = _mm256_mul_pd(_l2_limit_dot_product, _l2extension);
-
+	
 	_dx_l1p1_to_inter = _mm256_sub_pd(_interx, _l1p1x);
 	_dx_l1p2_to_inter = _mm256_sub_pd(_interx, _l1p2x);
 	_dx_l2p1_to_inter = _mm256_sub_pd(_interx, _l2p1x);
@@ -304,33 +286,33 @@ std::vector<CollisionInfo> _Ray1VsSurface4(const Ray& ray1, const std::vector<Su
 	_dy_l1p2_to_inter = _mm256_sub_pd(_intery, _l1p2y);
 	_dy_l2p1_to_inter = _mm256_sub_pd(_intery, _l2p1y);
 	_dy_l2p2_to_inter = _mm256_sub_pd(_intery, _l2p2y);
-
+	
 	__m256d _product_x_l1_to_inter, _product_y_l1_to_inter;
 	__m256d _product_x_l2_to_inter, _product_y_l2_to_inter;
-
+	
 	_product_x_l1_to_inter = _mm256_mul_pd(_dx_l1p1_to_inter, _dx_l1p2_to_inter);
 	_product_y_l1_to_inter = _mm256_mul_pd(_dy_l1p1_to_inter, _dy_l1p2_to_inter);
 	_product_x_l2_to_inter = _mm256_mul_pd(_dx_l2p1_to_inter, _dx_l2p2_to_inter);
 	_product_y_l2_to_inter = _mm256_mul_pd(_dy_l2p1_to_inter, _dy_l2p2_to_inter);
-
+	
 	_l1_dot_product = _mm256_add_pd(_product_x_l1_to_inter, _product_y_l1_to_inter);
 	_l2_dot_product = _mm256_add_pd(_product_x_l2_to_inter, _product_y_l2_to_inter);
-
+	
 	__m256d _point_lies_on_l1, _point_lies_on_l2;
-
+	
 	_point_lies_on_l1 = _mm256_cmp_pd(_l1_dot_product, _l1_limit_dot_product, _CMP_LT_OQ);
 	_point_lies_on_l2 = _mm256_cmp_pd(_l2_dot_product, _l2_limit_dot_product, _CMP_LT_OQ);
-
+	
 	__m256d _inter_exists_and_lies_on_lines;
 	_inter_exists_and_lies_on_lines = _mm256_and_pd(_mm256_castsi256_pd(collision_infos_registers.intersect), _point_lies_on_l1);
 	_inter_exists_and_lies_on_lines = _mm256_and_pd(_inter_exists_and_lies_on_lines, _point_lies_on_l2);
-	collision_infos_registers.intersect = _mm256_castpd_si256(_mm256_or_pd(_mm256_castsi256_pd(collision_infos_registers.coincide), _mm256_castsi256_pd(collision_infos_registers.intersect)));
-
+	collision_infos_registers.intersect = _mm256_castpd_si256(_mm256_or_pd(_mm256_castsi256_pd(collision_infos_registers.coincide), _inter_exists_and_lies_on_lines));
+	
 	collision_infos[0].intersect = collision_infos_registers.intersect.m256i_i64[3];
 	collision_infos[1].intersect = collision_infos_registers.intersect.m256i_i64[2];
 	collision_infos[2].intersect = collision_infos_registers.intersect.m256i_i64[1];
 	collision_infos[3].intersect = collision_infos_registers.intersect.m256i_i64[0];
-
+	
 	collision_infos[0].coincide = collision_infos_registers.coincide.m256i_i64[3];
 	collision_infos[1].coincide = collision_infos_registers.coincide.m256i_i64[2];
 	collision_infos[2].coincide = collision_infos_registers.coincide.m256i_i64[1];

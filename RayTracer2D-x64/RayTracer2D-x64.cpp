@@ -13,7 +13,7 @@
 #include "Surface.h"
 #include "Range.h"
 #include "Constants.h"
-#if AVX2
+#if AVX
 #include "CollisionAVX2.h"
 #endif
 
@@ -49,6 +49,7 @@ Surface null_surface = Surface(olc::vd2d(~0, ~0), olc::vd2d(~0, ~0));
 
 
 int rays_simulated = 8;
+int min_rays_simulated = 2;
 int max_rays_simulated = 256;
 
 
@@ -151,7 +152,8 @@ private:
 	}
 
 
-	bool debug_mode = false;
+	bool debug_mode = true;
+	bool debug_UI_show_first_ray_intersections = true;
 	bool debug_UI_show_surface_points_positions = true;
 	bool debug_UI_show_intersections_positions = true;
 	olc::vi2d debug_UI_intersections_screen_position;
@@ -228,6 +230,11 @@ public:
 		UI_scale = max(int((double)ScreenWidth() / 640), 1);
 		UI_character_size = 8 * UI_scale;
 
+		if (debug_mode)
+		{
+			min_rays_simulated = 1;
+		}
+
 		if (surfaces_stress_test)
 		{
 			int max_surfaces = 4000;
@@ -250,15 +257,22 @@ public:
 			//	}
 			//}
 
-			light_ray.origin = point + size.vector_y() / 2 + olc::vd2d(2.0, 0.0);
+			//light_ray.origin = point + size.vector_y() / 2 + olc::vd2d(2.0, 0.0);
+			//
+			//max_rays_simulated = 256;
+			//rays_simulated = max_rays_simulated;
+			//
+			//surfaces.push_back(Surface(point, point + size.vector_y(), SurfaceType::REFLECTIVE));
+			//surfaces.push_back(Surface(point + size.vector_y(), point + size, SurfaceType::REFLECTIVE));
+			//surfaces.push_back(Surface(point + size, point + size.vector_x(), SurfaceType::REFLECTIVE));
+			//surfaces.push_back(Surface(point + size.vector_x(), point, SurfaceType::REFLECTIVE));
 
-			max_rays_simulated = 256;
-			rays_simulated = max_rays_simulated;
+			light_ray.origin = { 1, 1 };
 
-			surfaces.push_back(Surface(point, point + size.vector_y(), SurfaceType::REFLECTIVE));
-			surfaces.push_back(Surface(point + size.vector_y(), point + size, SurfaceType::REFLECTIVE));
-			surfaces.push_back(Surface(point + size, point + size.vector_x(), SurfaceType::REFLECTIVE));
-			surfaces.push_back(Surface(point + size.vector_x(), point, SurfaceType::REFLECTIVE));
+			surfaces.push_back(Surface({ 0, 0 }, { 0, 100 }, SurfaceType::REFLECTIVE));
+			surfaces.push_back(Surface({ 0, 100 }, {100, 100}, SurfaceType::REFLECTIVE));
+			surfaces.push_back(Surface({ 100, 100 }, { 200, 0 }, SurfaceType::REFLECTIVE));
+			surfaces.push_back(Surface({ 200, 0 }, { 0, 0 }, SurfaceType::REFLECTIVE));
 		}
 
 		return true;
@@ -478,7 +492,7 @@ public:
 			if (GetKey(olc::RIGHT).bPressed)
 				rays_simulated += 1;
 
-			rays_simulated = Cap(rays_simulated, 2, max_rays_simulated);
+			rays_simulated = Cap(rays_simulated, min_rays_simulated, max_rays_simulated);
 
 
 			if (GetMouse(1).bPressed)
@@ -549,7 +563,7 @@ public:
 #else
 				vector<olc::vd2d> intersections;
 				vector<int> indexes;
-#if AVX2
+#if AVX
 
 				int surfaces_to_add = (4 - surfaces.size() % 4) % 4;
 				if (surfaces_to_add != 0)
@@ -583,6 +597,7 @@ public:
 					}
 				}
 
+
 				for (int i = surfaces.size() - 1; i > surfaces.size() - 1 - surfaces_to_add; i--)
 				{
 					surfaces.erase(surfaces.begin() + i);
@@ -601,6 +616,17 @@ public:
 #endif
 
 #endif
+				if (debug_mode && debug_UI_show_first_ray_intersections && index_ray_simulated == 0)
+				{
+					DrawStringUpRightCorner({ ScreenWidth(), 5 * UI_character_size}, "INTERSECTION POINTS COUNT: " + to_string(intersections.size()), UI_text_color);
+					for (olc::vd2d intersection_point : intersections)
+					{
+						FillCircle(ToScreenSpace(intersection_point), 5, olc::CYAN);
+						string x = to_string(intersection_point.x);
+						string y = to_string(intersection_point.y);
+						DrawStringBottomLeftCorner(ToScreenSpace(intersection_point), x + ' ' + y, olc::CYAN);
+					}
+				}
 
 				if (intersections.size() == 0)
 				{
