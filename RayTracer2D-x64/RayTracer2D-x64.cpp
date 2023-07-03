@@ -646,7 +646,7 @@ public:
 						}
 					}
 
-					intersections.clear()
+					intersections.clear();
 				}
 
 				if (intersections.size() == 0)
