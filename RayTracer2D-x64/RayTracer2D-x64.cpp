@@ -535,30 +535,38 @@ public:
 		Ray second_ray = first_ray;
 		Surface nearest_surface = null_surface;
 		hit_corner = false;
+
+#if MT
+		vector<olc::vd2d> intersections_per_surface(surfaces.size(), null_point);
+#endif
 		if (!is_constructing && !is_cutting)
 		{
 			for (int index_ray_simulated = 0; index_ray_simulated < rays_simulated; index_ray_simulated++)
 			{
+#if MT
+				for (olc::vd2d& intersection : intersections_per_surface)
+				{
+					intersection = null_point;
+				}
+#endif
 #if MT && MT_RANGE && !MT_AVX
 				Range indexes_iterators(0, surfaces.size());
 #elif MT && MT_RANGE && MT_AVX
-				Range indexes_iterators(0, surfaces.size(), 4);
+				Range indexes_iterators(0, surfaces.size() - surfaces.size() % 4, 4);
 #elif MT && !MT_RANGE && !MT_AVX
-				vector<int> indexes_iterators(surfaces.size() / 4);
-				for (int i = 0; i < indexes_iterators.size(); i++)
-				{
-					indexes_iterators[i] = i * 4;
-				}
-#elif MT && !MT_RANGE && MT_AVX
 				vector<int> indexes_iterators(surfaces.size());
 				for (int i = 0; i < indexes_iterators.size(); i++)
 				{
 					indexes_iterators[i] = i;
 				}
+#elif MT && !MT_RANGE && MT_AVX
+				vector<int> indexes_iterators(surfaces.size() / 4);
+				for (int i = 0; i < indexes_iterators.size(); i++)
+				{
+					indexes_iterators[i] = i * 4;
+				}
 #endif
 #if MT && !MT_AVX
-				vector<olc::vd2d> intersections_per_surface(surfaces.size(), null_point);
-
 				std::for_each(std::execution::par, indexes_iterators.begin(), indexes_iterators.end(),
 					[&](int i) {
 						olc::vd2d intersection_point;
@@ -570,8 +578,6 @@ public:
 					});
 
 #elif MT && MT_AVX
-
-				vector<olc::vd2d> intersections_per_surface(surfaces.size(), null_point);
 
 				std::for_each(std::execution::par, indexes_iterators.begin(), indexes_iterators.end(),
 					[&](int i) {
@@ -591,11 +597,12 @@ public:
 
 				for (int i = 0; i < surfaces.size() % 4; i++)
 				{
+					int first = surfaces.size() - surfaces.size() % 4;
 					olc::vd2d intersection_point;
-					CollisionInfo collision_info = RayVsSurface(first_ray, surfaces[surfaces.size() / 4 + i], intersection_point);
-					if ((collision_info.intersect || collision_info.coincide) && nearest_surface != surfaces[surfaces.size() / 4 + i])
+					CollisionInfo collision_info = RayVsSurface(first_ray, surfaces[first + i], intersection_point);
+					if ((collision_info.intersect || collision_info.coincide) && nearest_surface != surfaces[first + i])
 					{
-						intersections_per_surface[surfaces.size() + i] = intersection_point;
+						intersections_per_surface[first + i] = intersection_point;
 					}
 				}
 #endif
