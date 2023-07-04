@@ -153,13 +153,14 @@ private:
 
 
 	bool debug_mode = false;
-	bool debug_show_first_ray_intersections = true;
-	bool debug_UI_show_first_ray_intersections_positions = false;
-	bool debug_UI_show_surface_points_positions = false;
-	bool debug_UI_show_intersections_positions = false;
+	bool debug_show_ray_intersections = true;
+	bool debug_UI_write_ray_intersections_positions = false;
+	int debug_show_ray_intersections_depth = 16;
+	bool debug_UI_write_surface_points_positions = false;
+	bool debug_UI_write_ray_intersections = false;
 	olc::vi2d debug_UI_intersections_screen_position;
 
-	vector<olc::vd2d> debug_first_ray_intersections;
+	vector<olc::vd2d> debug_rays_intersections;
 
 	bool surfaces_stress_test1 = false;
 	bool surfaces_stress_test2 = true;
@@ -656,9 +657,12 @@ public:
 					break;
 				}
 
-				if (debug_mode && debug_show_first_ray_intersections && index_ray_simulated == 0)
+				if (debug_mode && debug_show_ray_intersections && index_ray_simulated < debug_show_ray_intersections_depth)
 				{
-					debug_first_ray_intersections = intersections;
+					for (olc::vd2d& intersection : intersections)
+					{
+						debug_rays_intersections.push_back(intersection);
+					}
 				}
 
 				olc::vd2d closest_intersection = intersections[0];
@@ -733,7 +737,7 @@ public:
 				first_ray = second_ray;
 
 
-				if (debug_mode && debug_UI_show_intersections_positions)
+				if (debug_mode && debug_UI_write_ray_intersections)
 				{
 					if (index_ray_simulated == 0)
 						debug_UI_intersections_screen_position = olc::vi2d(0, 8 * UI_scale);
@@ -755,7 +759,7 @@ public:
 		for (Surface& surface : surfaces)
 		{
 			DrawSurface(surface);
-			if (debug_mode && debug_UI_show_surface_points_positions)
+			if (debug_mode && debug_UI_write_surface_points_positions)
 			{
 				DrawStringUpLeftCorner(ToScreenSpace(surface.p1), "(" + to_string(surface.p1.x) + "; " + to_string(surface.p1.y) + ")", UI_text_color);
 				DrawStringUpLeftCorner(ToScreenSpace(surface.p2), "(" + to_string(surface.p2.x) + "; " + to_string(surface.p2.y) + ")", UI_text_color);
@@ -765,13 +769,13 @@ public:
 		if (first_point_constructed && !is_cutting_during_construction)
 			DrawSurface(surface_in_construction);
 
-		if (debug_mode && debug_show_first_ray_intersections)
+		if (debug_mode && debug_show_ray_intersections)
 		{
-			for (olc::vd2d& intersection : debug_first_ray_intersections)
+			for (olc::vd2d& intersection : debug_rays_intersections)
 			{
 				FillCircle(ToScreenSpace(intersection), 3, olc::CYAN);
 
-				if (debug_UI_show_first_ray_intersections_positions)
+				if (debug_UI_write_ray_intersections_positions)
 				{
 					string x = to_string(intersection.x);
 					string y = to_string(intersection.y);
@@ -779,7 +783,7 @@ public:
 				}
 			}
 
-			debug_first_ray_intersections.clear();
+			debug_rays_intersections.clear();
 		}
 
 		if (nearest_point_found)
