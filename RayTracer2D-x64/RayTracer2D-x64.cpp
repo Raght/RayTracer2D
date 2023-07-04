@@ -13,7 +13,7 @@
 #include "Surface.h"
 #include "Range.h"
 #include "Constants.h"
-#if AVX
+#if AVX || MT_AVX
 #include "CollisionAVX.h"
 #endif
 
@@ -242,7 +242,7 @@ public:
 
 		if (surfaces_stress_test1 || surfaces_stress_test2)
 		{
-			int max_surfaces = 4000;
+			int max_surfaces = 16000;
 			int surfaces_counter = 0;
 			int offset_x = 200;
 			int offset_y = 100;
@@ -539,16 +539,24 @@ public:
 		{
 			for (int index_ray_simulated = 0; index_ray_simulated < rays_simulated; index_ray_simulated++)
 			{
-#if MT && MT_RANGE
+#if MT && MT_RANGE && !MT_AVX
 				Range indexes_iterators(0, surfaces.size());
-#elif MT && !MT_RANGE
+#elif MT && MT_RANGE && MT_AVX
+				Range indexes_iterators(0, surfaces.size(), 4);
+#elif MT && !MT_RANGE && !MT_AVX
+				vector<int> indexes_iterators(surfaces.size() / 4);
+				for (int i = 0; i < indexes_iterators.size(); i++)
+				{
+					indexes_iterators[i] = i * 4;
+				}
+#elif MT && !MT_RANGE && MT_AVX
 				vector<int> indexes_iterators(surfaces.size());
 				for (int i = 0; i < indexes_iterators.size(); i++)
 				{
 					indexes_iterators[i] = i;
 				}
 #endif
-#if MT
+#if MT && !MT_AVX
 				vector<olc::vd2d> intersections_per_surface(surfaces.size(), null_point);
 
 				std::for_each(std::execution::par, indexes_iterators.begin(), indexes_iterators.end(),
@@ -560,6 +568,38 @@ public:
 							intersections_per_surface[i] = intersection_point;
 						}
 					});
+
+#elif MT && MT_AVX
+
+				vector<olc::vd2d> intersections_per_surface(surfaces.size(), null_point);
+
+				std::for_each(std::execution::par, indexes_iterators.begin(), indexes_iterators.end(),
+					[&](int i) {
+						__m256d _inter_x, _inter_y;
+						CollisionInfoAVXRegisters collision_infos = _Ray1VsSurface4(first_ray, surfaces, i, _inter_x, _inter_y);
+
+						for (int j = 0; j < 4; j++)
+						{
+							bool intersect = bool(collision_infos._intersect.m256d_f64[3 - j]);
+							bool coincide = bool(collision_infos._coincide.m256d_f64[3 - j]);
+							if ((intersect || coincide) && nearest_surface != surfaces[i + j])
+							{
+								intersections_per_surface[i + j] = olc::vd2d(_inter_x.m256d_f64[3 - j], _inter_y.m256d_f64[3 - j]);
+							}
+						}
+					});
+
+				for (int i = 0; i < surfaces.size() % 4; i++)
+				{
+					olc::vd2d intersection_point;
+					CollisionInfo collision_info = RayVsSurface(first_ray, surfaces[surfaces.size() / 4 + i], intersection_point);
+					if ((collision_info.intersect || collision_info.coincide) && nearest_surface != surfaces[surfaces.size() / 4 + i])
+					{
+						intersections_per_surface[surfaces.size() + i] = intersection_point;
+					}
+				}
+#endif
+#if MT
 				vector<olc::vd2d> intersections;
 				vector<int> indexes;
 				for (int i = 0; i < intersections_per_surface.size(); i++)
