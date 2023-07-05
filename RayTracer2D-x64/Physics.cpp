@@ -13,13 +13,13 @@ ScatterInfo::ScatterInfo(bool reflected, bool refracted)
 	this->refracted = refracted;
 }
 
-Ray ReflectRay(const Ray& ray, const Surface& surface, const olc::vd2d& intersectionPoint)
+Ray ReflectRay(const Ray& ray, const Surface& surface, const olc::vf2d& intersectionPoint)
 {
 	Ray reflected_ray = ray;
 
 	reflected_ray.origin = intersectionPoint;
 
-	double angle = AngleBetween(ray.direction, surface.Normal(ray.direction));
+	float angle = AngleBetween(ray.direction, surface.Normal(ray.direction));
 
 	if (ray.direction.cross(surface.Normal(ray.direction)) < 0.0)
 	{
@@ -31,19 +31,19 @@ Ray ReflectRay(const Ray& ray, const Surface& surface, const olc::vd2d& intersec
 	return reflected_ray;
 }
 
-bool TryRefractRay(const Ray& ray, const Surface& surface, const olc::vd2d& intersectionPoint, Ray& refractedRay)
+bool TryRefractRay(const Ray& ray, const Surface& surface, const olc::vf2d& intersectionPoint, Ray& refractedRay)
 {
 	refractedRay = ray;
 
-	double theta1 = AngleBetween(ray.direction * (-1.0), surface.Normal(ray.direction));
-	double theta2;
-	double n1 = ray.refractive_index, n2 = surface.refractive_index;
+	float theta1 = AngleBetween(ray.direction * (-1.0), surface.Normal(ray.direction));
+	float theta2;
+	float n1 = ray.refractive_index, n2 = surface.refractive_index;
 	if (Equal(ray.refractive_index, surface.refractive_index))
 	{
 		n2 = 1.0f;
 	}
 
-	double sin_theta2 = sinf(theta1) * (n1 / n2);
+	float sin_theta2 = sinf(theta1) * (n1 / n2);
 
 	if (sin_theta2 > 1.0f)
 	{
@@ -65,7 +65,7 @@ bool TryRefractRay(const Ray& ray, const Surface& surface, const olc::vd2d& inte
 }
 
 ScatterInfo ScatterRay(const Ray& ray, const Surface& surface,
-	const olc::vd2d& intersectionPoint, Ray& scatteredRay)
+	const olc::vf2d& intersectionPoint, Ray& scatteredRay)
 {
 	ScatterInfo scatter_info = ScatterInfo();
 	if (surface.is_reflective)

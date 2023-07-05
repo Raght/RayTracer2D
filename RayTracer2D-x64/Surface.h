@@ -9,21 +9,21 @@ enum class SurfaceType { REFLECTIVE, REFRACTIVE };
 struct Surface : Line
 {
 	Surface();
-	Surface(olc::vd2d point1, olc::vd2d point2);
-	Surface(olc::vd2d point1, olc::vd2d point2, bool isReflective, bool isRefractive, double refractiveIndex);
-	Surface(olc::vd2d point1, olc::vd2d point2, SurfaceType surfaceType);
-	Surface(olc::vd2d point1, olc::vd2d point2, SurfaceType surfaceType, double refractiveIndex);
+	Surface(olc::vf2d point1, olc::vf2d point2);
+	Surface(olc::vf2d point1, olc::vf2d point2, bool isReflective, bool isRefractive, float refractiveIndex);
+	Surface(olc::vf2d point1, olc::vf2d point2, SurfaceType surfaceType);
+	Surface(olc::vf2d point1, olc::vf2d point2, SurfaceType surfaceType, float refractiveIndex);
 
 
-	void Extend(double length);
-	Surface Extended(double length) const;
+	void Extend(float length);
+	Surface Extended(float length) const;
 
-	bool ContainsPoint(olc::vd2d point);
+	bool ContainsPoint(olc::vf2d point);
 
 
 	bool is_reflective;
 	bool is_refractive;
-	double refractive_index;
+	float refractive_index;
 
-	double extension;
+	float extension;
 };

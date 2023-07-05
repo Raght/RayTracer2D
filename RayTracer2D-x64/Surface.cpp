@@ -11,14 +11,14 @@ Surface::Surface()
 	extension = 2 * EPSILON;
 }
 
-Surface::Surface(olc::vd2d point1, olc::vd2d point2)
+Surface::Surface(olc::vf2d point1, olc::vf2d point2)
 	: Surface()
 {
 	p1 = point1;
 	p2 = point2;
 }
 
-Surface::Surface(olc::vd2d point1, olc::vd2d point2, bool isReflective, bool isRefractive, double refractiveIndex)
+Surface::Surface(olc::vf2d point1, olc::vf2d point2, bool isReflective, bool isRefractive, float refractiveIndex)
 	: Surface(point1, point2)
 {
 	is_reflective = isReflective;
@@ -26,7 +26,7 @@ Surface::Surface(olc::vd2d point1, olc::vd2d point2, bool isReflective, bool isR
 	refractive_index = refractiveIndex;
 }
 
-Surface::Surface(olc::vd2d point1, olc::vd2d point2, SurfaceType surfaceType)
+Surface::Surface(olc::vf2d point1, olc::vf2d point2, SurfaceType surfaceType)
 	: Surface(point1, point2)
 {
 	if (surfaceType == SurfaceType::REFLECTIVE)
@@ -41,28 +41,28 @@ Surface::Surface(olc::vd2d point1, olc::vd2d point2, SurfaceType surfaceType)
 	}
 }
 
-Surface::Surface(olc::vd2d point1, olc::vd2d point2, SurfaceType surfaceType, double refractiveIndex)
+Surface::Surface(olc::vf2d point1, olc::vf2d point2, SurfaceType surfaceType, float refractiveIndex)
 	: Surface(point1, point2, surfaceType)
 {
 	refractive_index = refractiveIndex;
 }
 
-void Surface::Extend(double length)
+void Surface::Extend(float length)
 {
 	if (length == 0)
 		return;
 
-	olc::vd2d& p_min_x = (p1.x < p2.x) ? p1 : p2;
-	olc::vd2d& p_max_x = (p1.x < p2.x) ? p2 : p1;
-	olc::vd2d& p_min_y = (p1.y < p2.y) ? p1 : p2;
-	olc::vd2d& p_max_y = (p1.y < p2.y) ? p2 : p1;
+	olc::vf2d& p_min_x = (p1.x < p2.x) ? p1 : p2;
+	olc::vf2d& p_max_x = (p1.x < p2.x) ? p2 : p1;
+	olc::vf2d& p_min_y = (p1.y < p2.y) ? p1 : p2;
+	olc::vf2d& p_max_y = (p1.y < p2.y) ? p2 : p1;
 
-	double dx = p_max_x.x - p_min_x.x;
-	double dy = p_max_y.y - p_min_y.y;
-	double a = dy / dx;
+	float dx = p_max_x.x - p_min_x.x;
+	float dy = p_max_y.y - p_min_y.y;
+	float a = dy / dx;
 
-	double surface_horizontal = Equal(a, 0);
-	double surface_vertical = isinf(a);
+	float surface_horizontal = Equal(a, 0);
+	float surface_vertical = isinf(a);
 
 	if (surface_horizontal)
 	{
@@ -93,7 +93,7 @@ void Surface::Extend(double length)
 	}
 }
 
-Surface Surface::Extended(double length) const
+Surface Surface::Extended(float length) const
 {
 	Surface extended_surface = *this;
 
@@ -102,19 +102,19 @@ Surface Surface::Extended(double length) const
 	return extended_surface;
 }
 
-bool Surface::ContainsPoint(olc::vd2d point)
+bool Surface::ContainsPoint(olc::vf2d point)
 {
-	olc::vd2d& p_min_x = (p1.x < p2.x) ? p1 : p2;
-	olc::vd2d& p_max_x = (p1.x < p2.x) ? p2 : p1;
-	olc::vd2d& p_min_y = (p1.y < p2.y) ? p1 : p2;
-	olc::vd2d& p_max_y = (p1.y < p2.y) ? p2 : p1;
+	olc::vf2d& p_min_x = (p1.x < p2.x) ? p1 : p2;
+	olc::vf2d& p_max_x = (p1.x < p2.x) ? p2 : p1;
+	olc::vf2d& p_min_y = (p1.y < p2.y) ? p1 : p2;
+	olc::vf2d& p_max_y = (p1.y < p2.y) ? p2 : p1;
 
-	double dx = p_max_x.x - p_min_x.x;
-	double dy = p_max_y.y - p_min_y.y;
-	double a = dy / dx;
+	float dx = p_max_x.x - p_min_x.x;
+	float dy = p_max_y.y - p_min_y.y;
+	float a = dy / dx;
 
-	double surface_horizontal = Equal(a, 0);
-	double surface_vertical = isinf(a);
+	float surface_horizontal = Equal(a, 0);
+	float surface_vertical = isinf(a);
 
 	if (surface_horizontal)
 	{
@@ -126,7 +126,7 @@ bool Surface::ContainsPoint(olc::vd2d point)
 	}
 	else
 	{
-		double b = p_min_y.y - a * p_min_y.x;
+		float b = p_min_y.y - a * p_min_y.x;
 		return (p_min_x.x <= point.x && point.x <= p_max_x.x) && Equal(a * point.x + b, point.y);
 	}
 }

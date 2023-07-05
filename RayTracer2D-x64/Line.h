@@ -5,12 +5,12 @@
 struct Line
 {
 	Line();
-	Line(olc::vd2d point1, olc::vd2d point2);
+	Line(olc::vf2d point1, olc::vf2d point2);
 
-	olc::vd2d Normal(const olc::vd2d& lightRayDirection) const;
+	olc::vf2d Normal(const olc::vf2d& lightRayDirection) const;
 
 	bool operator == (const Line& other);
 	bool operator != (const Line& other);
 
-	olc::vd2d p1, p2;
+	olc::vf2d p1, p2;
 };

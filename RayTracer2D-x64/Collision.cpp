@@ -15,21 +15,21 @@ CollisionInfo::CollisionInfo(bool intersect, bool coincide)
 	this->coincide = coincide;
 }
 
-CollisionInfo LineVsLine(const Line& line1, const Line& line2, olc::vd2d& intersectionPoint)
+CollisionInfo LineVsLine(const Line& line1, const Line& line2, olc::vf2d& intersectionPoint)
 {
 	/*
 		{ a1 * x + b1 = y
 		{ a2 * x + b2 = y
 	*/
 
-	double dx1 = line1.p2.x - line1.p1.x;
-	double dx2 = line2.p2.x - line2.p1.x;
-	double dy1 = line1.p2.y - line1.p1.y;
-	double dy2 = line2.p2.y - line2.p1.y;
-	double a1 = dy1 / dx1;
-	double a2 = dy2 / dx2;
-	double b1 = line1.p1.y - a1 * line1.p1.x;
-	double b2 = line2.p1.y - a2 * line2.p1.x;
+	float dx1 = line1.p2.x - line1.p1.x;
+	float dx2 = line2.p2.x - line2.p1.x;
+	float dy1 = line1.p2.y - line1.p1.y;
+	float dy2 = line2.p2.y - line2.p1.y;
+	float a1 = dy1 / dx1;
+	float a2 = dy2 / dx2;
+	float b1 = line1.p1.y - a1 * line1.p1.x;
+	float b2 = line2.p1.y - a2 * line2.p1.x;
 
 	bool line1_horizontal = Equal(a1, 0);
 	bool line2_horizontal = Equal(a2, 0);
@@ -58,8 +58,8 @@ CollisionInfo LineVsLine(const Line& line1, const Line& line2, olc::vd2d& inters
 				y0 = c
 			*/
 
-			double x0 = (line1.p1.y - b2) / a2;
-			double y0 = line1.p1.y;
+			float x0 = (line1.p1.y - b2) / a2;
+			float y0 = line1.p1.y;
 
 			intersectionPoint = { x0, y0 };
 			return CollisionInfo(true, false);
@@ -87,8 +87,8 @@ CollisionInfo LineVsLine(const Line& line1, const Line& line2, olc::vd2d& inters
 				y0 = a2 * c + b2
 			*/
 
-			double x0 = line1.p1.x;
-			double y0 = a2 * line1.p1.x + b2;
+			float x0 = line1.p1.x;
+			float y0 = a2 * line1.p1.x + b2;
 
 			intersectionPoint = { x0, y0 };
 			return CollisionInfo(true, false);
@@ -106,8 +106,8 @@ CollisionInfo LineVsLine(const Line& line1, const Line& line2, olc::vd2d& inters
 				y0 = c
 			*/
 
-			double x0 = (line2.p1.y - b1) / a1;
-			double y0 = line2.p1.y;
+			float x0 = (line2.p1.y - b1) / a1;
+			float y0 = line2.p1.y;
 
 			intersectionPoint = { x0, y0 };
 			return CollisionInfo(true, false);
@@ -122,8 +122,8 @@ CollisionInfo LineVsLine(const Line& line1, const Line& line2, olc::vd2d& inters
 				y0 = a2 * c + b2
 			*/
 
-			double x0 = line2.p1.x;
-			double y0 = a1 * line2.p1.x + b1;
+			float x0 = line2.p1.x;
+			float y0 = a1 * line2.p1.x + b1;
 
 			intersectionPoint = { x0, y0 };
 			return CollisionInfo(true, false);
@@ -144,8 +144,8 @@ CollisionInfo LineVsLine(const Line& line1, const Line& line2, olc::vd2d& inters
 				return CollisionInfo(intersect_and_coincide, intersect_and_coincide);
 			}
 
-			double x0 = (b2 - b1) / (a1 - a2);
-			double y0 = a1 * x0 + b1;
+			float x0 = (b2 - b1) / (a1 - a2);
+			float y0 = a1 * x0 + b1;
 
 			intersectionPoint = { x0, y0 };
 			return CollisionInfo(true, false);
@@ -153,7 +153,7 @@ CollisionInfo LineVsLine(const Line& line1, const Line& line2, olc::vd2d& inters
 	}
 }
 
-CollisionInfo LineVsSurface(const Line& line, const Surface& surface, olc::vd2d& intersectionPoint)
+CollisionInfo LineVsSurface(const Line& line, const Surface& surface, olc::vf2d& intersectionPoint)
 {
 	CollisionInfo collision_info = LineVsLine(line, surface, intersectionPoint);
 
@@ -162,8 +162,8 @@ CollisionInfo LineVsSurface(const Line& line, const Surface& surface, olc::vd2d&
 		return collision_info;
 	}
 
-	double surface_length = (surface.p2 - surface.p1).mag();
-	double surface_limit_dot_product = surface.extension * (surface_length + surface.extension);
+	float surface_length = (surface.p2 - surface.p1).mag();
+	float surface_limit_dot_product = surface.extension * (surface_length + surface.extension);
 	bool point_lies_on_surface = (intersectionPoint - surface.p1).dot(intersectionPoint - surface.p2) < surface_limit_dot_product;
 
 	if (collision_info.intersect && point_lies_on_surface)
@@ -174,7 +174,7 @@ CollisionInfo LineVsSurface(const Line& line, const Surface& surface, olc::vd2d&
 	return CollisionInfo(false, false);
 }
 
-CollisionInfo SurfaceVsSurface(const Surface& surface1, const Surface& surface2, olc::vd2d& intersectionPoint)
+CollisionInfo SurfaceVsSurface(const Surface& surface1, const Surface& surface2, olc::vf2d& intersectionPoint)
 {
 	CollisionInfo collision_info = LineVsLine(surface1, surface2, intersectionPoint);
 
@@ -183,10 +183,10 @@ CollisionInfo SurfaceVsSurface(const Surface& surface1, const Surface& surface2,
 		return collision_info;
 	}
 
-	double surface1_length = (surface1.p2 - surface1.p1).mag();
-	double surface2_length = (surface2.p2 - surface2.p1).mag();
-	double surface1_limit_dot_product = surface1.extension * (surface1_length + surface1.extension);
-	double surface2_limit_dot_product = surface2.extension * (surface2_length + surface2.extension);
+	float surface1_length = (surface1.p2 - surface1.p1).mag();
+	float surface2_length = (surface2.p2 - surface2.p1).mag();
+	float surface1_limit_dot_product = surface1.extension * (surface1_length + surface1.extension);
+	float surface2_limit_dot_product = surface2.extension * (surface2_length + surface2.extension);
 	bool point_lies_on_surface1 = (intersectionPoint - surface1.p1).dot(intersectionPoint - surface1.p2) < surface1_limit_dot_product;
 	bool point_lies_on_surface2 = (intersectionPoint - surface2.p1).dot(intersectionPoint - surface2.p2) < surface2_limit_dot_product;
 
@@ -200,18 +200,18 @@ CollisionInfo SurfaceVsSurface(const Surface& surface1, const Surface& surface2,
 
 CollisionInfo SurfaceVsSurface(const Surface& surface1, const Surface& surface2)
 {
-	olc::vd2d intersection_point;
+	olc::vf2d intersection_point;
 	return SurfaceVsSurface(surface1, surface2, intersection_point);
 }
 
-CollisionInfo RayVsSurface(const Ray& ray, const Surface& surface, olc::vd2d& intersectionPoint)
+CollisionInfo RayVsSurface(const Ray& ray, const Surface& surface, olc::vf2d& intersectionPoint)
 {
 	Surface ray_as_surface = Surface(ray.origin, ray.EndPoint());
 	ray_as_surface.extension = 0.0;
 	return SurfaceVsSurface(ray_as_surface, surface, intersectionPoint);
 }
 
-bool PointVsRect(olc::vd2d point, olc::vd2d rectangle_position, olc::vd2d rectangle_size)
+bool PointVsRect(olc::vf2d point, olc::vf2d rectangle_position, olc::vf2d rectangle_size)
 {
 	return rectangle_position.x <= point.x && point.x <= rectangle_position.x + rectangle_size.x &&
 		rectangle_position.y <= point.y && point.y <= rectangle_position.y + rectangle_size.y;

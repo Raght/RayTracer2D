@@ -6,7 +6,7 @@
 
 struct Ray
 {
-	olc::vd2d EndPoint() const;
+	olc::vf2d EndPoint() const;
 
 	Ray OppositeRay() const;
 
@@ -17,17 +17,17 @@ struct Ray
 
 
 	Ray();
-	Ray(olc::vd2d origin, olc::vd2d direction, double distance);
-	Ray(olc::vd2d origin, olc::vd2d direction, double distance, olc::Pixel color, double brightness);
-	Ray(olc::vd2d origin, olc::vd2d direction, double distance, olc::Pixel color, double brightness, double refractive_index);
+	Ray(olc::vf2d origin, olc::vf2d direction, float distance);
+	Ray(olc::vf2d origin, olc::vf2d direction, float distance, olc::Pixel color, float brightness);
+	Ray(olc::vf2d origin, olc::vf2d direction, float distance, olc::Pixel color, float brightness, float refractive_index);
 
 
-	olc::vd2d origin;
-	olc::vd2d direction;
-	double distance;
+	olc::vf2d origin;
+	olc::vf2d direction;
+	float distance;
 
 	olc::Pixel color_max_brightness;
-	double brightness;
+	float brightness;
 
-	double refractive_index;
+	float refractive_index;
 };

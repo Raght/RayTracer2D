@@ -15,8 +15,8 @@ struct ScatterInfo
 	bool refracted;
 };
 
-Ray ReflectRay(const Ray& ray, const Surface& surface, const olc::vd2d& intersectionPoint);
+Ray ReflectRay(const Ray& ray, const Surface& surface, const olc::vf2d& intersectionPoint);
 
-bool TryRefractRay(const Ray& ray, const Surface& surface, const olc::vd2d& intersectionPoint, Ray& refractedRay);
+bool TryRefractRay(const Ray& ray, const Surface& surface, const olc::vf2d& intersectionPoint, Ray& refractedRay);
 
-ScatterInfo ScatterRay(const Ray& ray, const Surface& surface, const olc::vd2d& intersectionPoint, Ray& scatteredRay);
+ScatterInfo ScatterRay(const Ray& ray, const Surface& surface, const olc::vf2d& intersectionPoint, Ray& scatteredRay);

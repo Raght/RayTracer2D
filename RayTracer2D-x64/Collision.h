@@ -16,12 +16,12 @@ struct CollisionInfo
 	bool coincide;
 };
 
-CollisionInfo LineVsLine(const Line& line1, const Line& line2, olc::vd2d& intersectionPoint);
+CollisionInfo LineVsLine(const Line& line1, const Line& line2, olc::vf2d& intersectionPoint);
 
-CollisionInfo SurfaceVsSurface(const Surface& surface1, const Surface& surface2, olc::vd2d& intersectionPoint);
+CollisionInfo SurfaceVsSurface(const Surface& surface1, const Surface& surface2, olc::vf2d& intersectionPoint);
 
 CollisionInfo SurfaceVsSurface(const Surface& surface1, const Surface& surface2);
 
-CollisionInfo RayVsSurface(const Ray& ray, const Surface& surface, olc::vd2d& intersectionPoint);
+CollisionInfo RayVsSurface(const Ray& ray, const Surface& surface, olc::vf2d& intersectionPoint);
 
-bool PointVsRect(olc::vd2d point, olc::vd2d rectangle_position, olc::vd2d rectangle_size);
+bool PointVsRect(olc::vf2d point, olc::vf2d rectangle_position, olc::vf2d rectangle_size);

@@ -1,7 +1,7 @@
 #include "Ray.h"
 
 
-olc::vd2d Ray::EndPoint() const
+olc::vf2d Ray::EndPoint() const
 {
 	return origin + direction * distance;
 }
@@ -40,7 +40,7 @@ Ray::Ray()
 	refractive_index = 1;
 }
 
-Ray::Ray(olc::vd2d origin, olc::vd2d direction, double distance)
+Ray::Ray(olc::vf2d origin, olc::vf2d direction, float distance)
 	: Ray()
 {
 	this->origin = origin;
@@ -48,14 +48,14 @@ Ray::Ray(olc::vd2d origin, olc::vd2d direction, double distance)
 	this->distance = distance;
 }
 
-Ray::Ray(olc::vd2d origin, olc::vd2d direction, double distance, olc::Pixel color, double brightness)
+Ray::Ray(olc::vf2d origin, olc::vf2d direction, float distance, olc::Pixel color, float brightness)
 	: Ray(origin, direction, distance)
 {
 	this->color_max_brightness = color;
 	this->brightness = brightness;
 }
 
-Ray::Ray(olc::vd2d origin, olc::vd2d direction, double distance, olc::Pixel color, double brightness, double refractive_index)
+Ray::Ray(olc::vf2d origin, olc::vf2d direction, float distance, olc::Pixel color, float brightness, float refractive_index)
 	: Ray(origin, direction, distance, color, brightness)
 {
 	this->refractive_index = refractive_index;

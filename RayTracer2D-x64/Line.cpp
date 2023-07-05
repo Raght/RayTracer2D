@@ -3,21 +3,21 @@
 
 Line::Line()
 {
-	p1 = olc::vd2d(0, 0);
-	p2 = olc::vd2d(1, 0);
+	p1 = olc::vf2d(0, 0);
+	p2 = olc::vf2d(1, 0);
 }
 
-Line::Line(olc::vd2d point1, olc::vd2d point2)
+Line::Line(olc::vf2d point1, olc::vf2d point2)
 {
 	p1 = point1;
 	p2 = point2;
 }
 
-olc::vd2d Line::Normal(const olc::vd2d& lightRayDirection) const
+olc::vf2d Line::Normal(const olc::vf2d& lightRayDirection) const
 {
-	olc::vd2d line_vector = p1 - p2;
+	olc::vf2d line_vector = p1 - p2;
 
-	olc::vd2d normal = { line_vector.y, -line_vector.x };
+	olc::vf2d normal = { line_vector.y, -line_vector.x };
 
 	if (normal.dot(lightRayDirection) > 0)
 	{
