@@ -17,7 +17,7 @@ struct RangeIterator
 
     int operator-(const RangeIterator& other) noexcept;
 
-    int i;
-    int elem;
-    int step;
+    RangeIterator operator+(int i) const noexcept;
+
+    int i, start, step, elem;
 };

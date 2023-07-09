@@ -24,7 +24,7 @@ namespace std
 	template<>
 	struct iterator_traits<RangeIterator>
 	{
-		using iterator_category = std::forward_iterator_tag;
+		using iterator_category = std::random_access_iterator_tag;
 		using value_type = int;
 		using pointer = int*;
 		using reference = int&;
@@ -553,9 +553,9 @@ public:
 					intersection = null_point;
 				}
 
-				Range indexes_iterators(0, intersections_per_surface.size(), NUMBERS_PER_AVX_REGISTER);
+				Range intersections_indexes_range(0, intersections_per_surface.size(), NUMBERS_PER_AVX_REGISTER);
 
-				std::for_each(std::execution::par, indexes_iterators.begin(), indexes_iterators.end(),
+				std::for_each(std::execution::par, intersections_indexes_range.begin(), intersections_indexes_range.end(),
 					[&](int i) {
 						__m256 _inter_x, _inter_y;
 						CollisionInfoAVXRegisters collision_infos = _RayVsSurfaceAVX(first_ray, surfaces, i, _inter_x, _inter_y);
@@ -666,25 +666,38 @@ public:
 					}
 				}
 
-				for (int i = 0; i < intersections.size(); i++)
-				{
+				
+				Range intersections_range(0, intersections.size());
+				hit_corner = std::any_of(std::execution::seq, intersections_range.begin(), intersections_range.end(), [&](int i) {
 					float distance_current = (intersections[i] - first_ray.origin).mag2();
-
-					if (abs(distance_current - distance_closest) < EPSILON &&
+					return abs(distance_current - distance_closest) < EPSILON &&
 						i != closest_intersection_index &&
-						!surfaces[closest_surface_index].IsContinuationOfAnotherSurface(surfaces[indexes[i]]))
-					{
-						hit_corner = true;
-						corner_position = closest_intersection;
+						!surfaces[closest_surface_index].IsContinuationOfAnotherSurface(surfaces[indexes[i]]);
+					});
 
-						DrawRay(first_ray, corner_position);
-
-						break;
-					}
-				}
+				//for (int i = 0; i < intersections.size(); i++)
+				//{
+				//	float distance_current = (intersections[i] - first_ray.origin).mag2();
+				//
+				//	if (abs(distance_current - distance_closest) < EPSILON &&
+				//		i != closest_intersection_index &&
+				//		!surfaces[closest_surface_index].IsContinuationOfAnotherSurface(surfaces[indexes[i]]))
+				//	{
+				//		hit_corner = true;
+				//
+				//		break;
+				//	}
+				//}
 
 				if (hit_corner)
+				{
+					corner_position = closest_intersection;
+
+					DrawRay(first_ray, corner_position);
+
 					break;
+				}
+					
 				
 
 				
