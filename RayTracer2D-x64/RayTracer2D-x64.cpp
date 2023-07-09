@@ -895,18 +895,21 @@ int main()
 	graphics_modes.push_back({ 1280, 720, 1, 1 });
 	graphics_modes.push_back({ 640,  360, 2, 2 });
 
-	cout << "Mode | Resolution   | Pixel size \n";
-	cout << "            FULLSCREEN           \n";
-	cout << "1    | FULLSCREEN   | 1x1        \n";
-	cout << "2    | FULLSCREEN/2 | 2x2        \n";
-	cout << "             FULL HD             \n";
-	cout << "3    | 1600x900     | 1x1        \n";
-	cout << "4    | 854x480      | 2x2        \n";
-	cout << "5    | 532x300      | 3x3        \n";
-	cout << "                HD               \n";
-	cout << "6    | 1280x720     | 1x1        \n";
-	cout << "7    | 640x360      | 2x2        \n";
-	cout << "8    | Custom       | Custom     \n";
+	cout << "|----------------------------------|\n";
+	cout << "| Mode | Resolution   | Pixel size |\n";
+	cout << "|-----------  FULLSCREEN  ---------|\n";
+	cout << "| 1    | FULLSCREEN   | 1x1        |\n";
+	cout << "| 2    | FULLSCREEN/2 | 2x2        |\n";
+	cout << "|------------  FULL HD  -----------|\n";
+	cout << "| 3    | 1600x900     | 1x1        |\n";
+	cout << "| 4    | 854x480      | 2x2        |\n";
+	cout << "| 5    | 532x300      | 3x3        |\n";
+	cout << "|--------------  HD  --------------|\n";
+	cout << "| 6    | 1280x720     | 1x1        |\n";
+	cout << "| 7    | 640x360      | 2x2        |\n";
+	cout << "| 8    | Custom       | Custom     |\n";
+	cout << "|----------------------------------|\n";
+	cout << '\n';
 
 	while (true)
 	{
@@ -916,7 +919,7 @@ int main()
 
 		if (mode < 0 || mode > graphics_modes.size() + 1)
 		{
-			cout << "The mode you've chosen is incorrect or doesn't exist" << '\n';
+			cout << "The mode you've chosen is incorrect or doesn't exist\n\n";
 			continue;
 		}
 		else if (mode == graphics_modes.size() + 1)
@@ -930,6 +933,13 @@ int main()
 			cin >> pixel_size;
 			graphics_mode.pixel_width = pixel_size;
 			graphics_mode.pixel_height = pixel_size;
+
+			if (graphics_mode.resolution_width * graphics_mode.pixel_width > screen_width ||
+				graphics_mode.resolution_height * graphics_mode.pixel_height > screen_height)
+			{
+				cout << "Could not construct a window with such resolution\n\n";
+				continue;
+			}
 		}
 		else
 		{
@@ -939,12 +949,23 @@ int main()
 		break;
 	}
 
+	if (graphics_mode.resolution_width * graphics_mode.pixel_width > screen_width ||
+		graphics_mode.resolution_height * graphics_mode.pixel_height > screen_height)
+	{
+		cout << "Could not construct a window with such resolution\n\n";
+		cin.get();
+		return 1;
+	}
+
 	Engine2D Engine;
 	if (Engine.Construct(graphics_mode))
 	{
 		Engine.Start();
 	}
-	else return 1;
+	else
+	{
+		return 1;
+	}
 
 	return 0;
 }
