@@ -910,7 +910,7 @@ int main()
 
 	while (true)
 	{
-		int mode = 5;
+		int mode = 4;
 		cout << "Choose mode: ";
 		cin >> mode;
 
