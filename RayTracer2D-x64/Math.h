@@ -2,8 +2,8 @@
 #include "olcPixelGameEngine.h"
 
 
-inline float const PI = 3.141592653589793238462643383279;
-inline float const EPSILON = 1e-6;
+inline float const PI = 3.141592653589793238462643383279f;
+inline float const EPSILON = 1e-6f;
 
 bool InRange(float number, float range_min, float range_max);
 

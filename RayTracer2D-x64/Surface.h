@@ -20,6 +20,10 @@ struct Surface : Line
 
 	bool ContainsPoint(olc::vf2d point);
 
+	bool IsContinuationOfAnotherSurface(const Surface& another_surface) const;
+
+	float AngleCoefficient() const;
+
 
 	bool is_reflective;
 	bool is_refractive;

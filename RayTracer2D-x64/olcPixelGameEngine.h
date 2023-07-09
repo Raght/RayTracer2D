@@ -417,8 +417,8 @@ namespace olc
 		v2d_generic& operator *= (const T& rhs) { this->x *= rhs; this->y *= rhs; return *this; }
 		v2d_generic& operator /= (const T& rhs) { this->x /= rhs; this->y /= rhs; return *this; }
 		
-		bool operator == (const v2d_generic& rhs) { return this->x == rhs.x && this->y == rhs.y; }
-		bool operator != (const v2d_generic& rhs) { return !(this->x == rhs.x && this->y == rhs.y); }
+		bool operator == (const v2d_generic& rhs) const { return x == rhs.x && y == rhs.y; }
+		bool operator != (const v2d_generic& rhs) const { return !(x == rhs.x && y == rhs.y); }
 		std::string toString() { return "x: " + std::to_string(x) + "   y: " + std::to_string(y) + "\n"; }
 
 		operator v2d_generic<int32_t>() const { return { static_cast<int32_t>(this->x), static_cast<int32_t>(this->y) }; }

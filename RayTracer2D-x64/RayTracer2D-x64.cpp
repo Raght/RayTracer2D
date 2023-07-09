@@ -177,7 +177,7 @@ private:
 	Surface surface_in_construction;
 	bool first_point_constructed = false;
 	bool is_constructing = false;
-	float refractive_index = 1.5;
+	float refractive_index = 1.5f;
 	float nearest_point_snap_radius = 8;
 	olc::vf2d nearest_point;
 	olc::vf2d point_to_construct;
@@ -192,10 +192,10 @@ private:
 
 
 	int rays_per_second = 50;
-	float ms_per_ray_increase = 1.0 / rays_per_second;
-	float timer = 0.0;
+	float ms_per_ray_increase = 1.0f / rays_per_second;
+	float timer = 0.0f;
 
-	float refractive_index_step = 0.1;
+	float refractive_index_step = 0.1f;
 
 
 	int UI_scale;
@@ -221,7 +221,7 @@ private:
 	olc::Pixel UI_switch_state_on_color = olc::GREEN;
 	olc::Pixel UI_switch_state_off_color = olc::RED;
 	olc::Pixel surface_normal_color = olc::YELLOW;
-	float surface_normal_length = 25.0;
+	float surface_normal_length = 25.0f;
 	
 
 public:
@@ -243,7 +243,7 @@ public:
 
 		if (surfaces_stress_test1 || surfaces_stress_test2)
 		{
-			int max_surfaces = 1000;
+			int max_surfaces = 16000;
 			int surfaces_counter = 0;
 			int offset_x = 200;
 			int offset_y = 100;
@@ -277,7 +277,7 @@ public:
 				}
 			}
 
-			light_ray.origin = point + size.vector_y() / 2 + olc::vf2d(2.0, 0.0);
+			light_ray.origin = point + size.vector_y() / 2 + olc::vf2d(2.0f, 0.0f);
 			
 			max_rays_simulated = 256;
 			rays_simulated = max_rays_simulated;
@@ -485,7 +485,7 @@ public:
 				if (GetKey(olc::UP).bPressed || GetKey(olc::RIGHT).bPressed)
 					refractive_index += refractive_index_step;
 
-				refractive_index = Cap(refractive_index, 1.0, 999.0);
+				refractive_index = Cap(refractive_index, 1.0f, 999.0f);
 			}
 		}
 		else if (!is_cutting_during_construction)
@@ -537,8 +537,11 @@ public:
 		Surface nearest_surface = null_surface;
 		hit_corner = false;
 
+
+		int surfaces_left_to_check = surfaces.size() % NUMBERS_PER_AVX_REGISTER;
+
 #if MT_AVX
-		vector<olc::vf2d> intersections_per_surface(surfaces.size(), null_point);
+		vector<olc::vf2d> intersections_per_surface(surfaces.size() - surfaces_left_to_check, null_point);
 #endif
 		if (!is_constructing && !is_cutting)
 		{
@@ -550,7 +553,7 @@ public:
 					intersection = null_point;
 				}
 
-				Range indexes_iterators(0, surfaces.size() - surfaces.size() % NUMBERS_PER_AVX_REGISTER, NUMBERS_PER_AVX_REGISTER);
+				Range indexes_iterators(0, intersections_per_surface.size(), NUMBERS_PER_AVX_REGISTER);
 
 				std::for_each(std::execution::par, indexes_iterators.begin(), indexes_iterators.end(),
 					[&](int i) {
@@ -570,19 +573,8 @@ public:
 							}
 						}
 					});
-				
-				for (int i = 0; i < surfaces.size() % NUMBERS_PER_AVX_REGISTER; i++)
-				{
-					int first = surfaces.size() - surfaces.size() % NUMBERS_PER_AVX_REGISTER;
-					olc::vf2d intersection_point;
-					CollisionInfo collision_info = RayVsSurface(first_ray, surfaces[first + i], intersection_point);
-					if (collision_info.intersect && !collision_info.coincide && nearest_surface != surfaces[first + i])
-					{
-						intersections_per_surface[first + i] = intersection_point;
-					}
-				}
 
-				vector<olc::vd2d> intersections;
+				vector<olc::vf2d> intersections;
 				vector<int> indexes;
 				for (int i = 0; i < intersections_per_surface.size(); i++)
 				{
@@ -593,50 +585,53 @@ public:
 						indexes.push_back(i);
 					}
 				}
+
+				for (int i = surfaces.size() - surfaces_left_to_check; i < surfaces.size(); i++)
+				{
+					olc::vf2d intersection_point;
+					CollisionInfo collision_info = RayVsSurface(first_ray, surfaces[i], intersection_point);
+					if (collision_info.intersect && !collision_info.coincide && nearest_surface != surfaces[i])
+					{
+						intersections.push_back(intersection_point);
+						indexes.push_back(i);
+					}
+				}
 #else
 				vector<olc::vf2d> intersections;
 				vector<int> indexes;
 
-				for (int i = 0; i < surfaces.size(); i += NUMBERS_PER_AVX_REGISTER)
+				for (int i = 0; i < surfaces.size() - surfaces_left_to_check; i += NUMBERS_PER_AVX_REGISTER)
 				{
-					if (surfaces.size() - i >= NUMBERS_PER_AVX_REGISTER)
-					{
-						__m256 _inter_x, _inter_y;
-						CollisionInfoAVXRegisters collision_infos = _RayVsSurfaceAVX(first_ray, surfaces, i, _inter_x, _inter_y);
+					__m256 _inter_x, _inter_y;
+					CollisionInfoAVXRegisters collision_infos = _RayVsSurfaceAVX(first_ray, surfaces, i, _inter_x, _inter_y);
 
-						for (int j = 0; j < NUMBERS_PER_AVX_REGISTER; j++)
-						{
-							bool intersect = bool(collision_infos._intersect.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j]);
-							bool coincide = bool(collision_infos._coincide.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j]);
-							if (intersect && !coincide && nearest_surface != surfaces[i + j])
-							{
-								intersections.push_back(olc::vf2d(
-									_inter_x.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j],
-									_inter_y.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j])
-								);
-								indexes.push_back(i + j);
-							}
-						}
-					}
-					else
+					for (int j = 0; j < NUMBERS_PER_AVX_REGISTER; j++)
 					{
-						vector<olc::vf2d> intersection_points(surfaces.size() % NUMBERS_PER_AVX_REGISTER);
-						vector<CollisionInfo> collision_infos;
-						for (int j = 0; j < surfaces.size() % NUMBERS_PER_AVX_REGISTER; j++)
+						bool intersect = bool(collision_infos._intersect.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j]);
+						bool coincide = bool(collision_infos._coincide.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j]);
+						if (intersect && !coincide && nearest_surface != surfaces[i + j])
 						{
-							collision_infos.push_back(RayVsSurface(first_ray, surfaces[i + j], intersection_points[j]));
-						}
-						for (int j = 0; j < intersection_points.size(); j++)
-						{
-							if (collision_infos[j].intersect && !collision_infos[j].coincide && nearest_surface != surfaces[i + j])
-							{
-								intersections.push_back(intersection_points[j]);
-								indexes.push_back(i + j);
-							}
+							intersections.push_back(olc::vf2d(
+								_inter_x.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j],
+								_inter_y.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j])
+							);
+							indexes.push_back(i + j);
 						}
 					}
 				}
+
+				for (int i = surfaces.size() - surfaces_left_to_check; i < surfaces.size(); i++)
+				{
+					olc::vf2d intersection_point;
+					CollisionInfo collision_info = RayVsSurface(first_ray, surfaces[i], intersection_point);
+					if (collision_info.intersect && !collision_info.coincide && nearest_surface != surfaces[i])
+					{
+						intersections.push_back(intersection_point);
+						indexes.push_back(i);
+					}
+				}
 #endif
+
 				if (intersections.size() == 0)
 				{
 					DrawRay(first_ray);
@@ -655,40 +650,29 @@ public:
 				int closest_surface_index = indexes[0];
 				int closest_intersection_index = 0;
 
-				if (intersections.size() > 1)
+				float distance_closest = (closest_intersection - first_ray.origin).mag2();
+				for (int i = 0; i < intersections.size(); i++)
 				{
-					float distance_closest = (closest_intersection - first_ray.origin).mag2();
-					for (int i = 0; i < intersections.size(); i++)
+					olc::vf2d& intersection = intersections[i];
+
+					float distance_current = (intersection - first_ray.origin).mag2();
+
+					if (distance_current < distance_closest)
 					{
-						olc::vf2d& intersection = intersections[i];
-
-						float distance_current = (intersection - first_ray.origin).mag2();
-
-						if (distance_current < distance_closest)
-						{
-							closest_intersection = intersection;
-							distance_closest = (closest_intersection - first_ray.origin).mag2();
-							closest_intersection_index = i;
-							closest_surface_index = indexes[i];
-						}
+						closest_intersection = intersection;
+						distance_closest = (closest_intersection - first_ray.origin).mag2();
+						closest_intersection_index = i;
+						closest_surface_index = indexes[i];
 					}
+				}
 
-					olc::vf2d second_closest_intersection = first_ray.origin + olc::vf2d(first_ray.distance + 1, 0);
-					float distance_second_closest = (first_ray.distance + 1) * (first_ray.distance + 1);
-					for (int i = 0; i < intersections.size(); i++)
-					{
-						olc::vf2d& intersection = intersections[i];
+				for (int i = 0; i < intersections.size(); i++)
+				{
+					float distance_current = (intersections[i] - first_ray.origin).mag2();
 
-						float distance_current = (intersection - first_ray.origin).mag2();
-
-						if (distance_closest <= distance_current && distance_current < distance_second_closest && i != closest_intersection_index)
-						{
-							second_closest_intersection = intersection;
-							distance_second_closest = (second_closest_intersection - first_ray.origin).mag2();
-						}
-					}
-
-					if (abs(distance_second_closest - distance_closest) < EPSILON)
+					if (abs(distance_current - distance_closest) < EPSILON &&
+						i != closest_intersection_index &&
+						!surfaces[closest_surface_index].IsContinuationOfAnotherSurface(surfaces[indexes[i]]))
 					{
 						hit_corner = true;
 						corner_position = closest_intersection;
@@ -698,6 +682,10 @@ public:
 						break;
 					}
 				}
+
+				if (hit_corner)
+					break;
+				
 
 				
 				olc::vf2d intersection_point = closest_intersection;

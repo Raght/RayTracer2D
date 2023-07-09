@@ -130,3 +130,14 @@ bool Surface::ContainsPoint(olc::vf2d point)
 		return (p_min_x.x <= point.x && point.x <= p_max_x.x) && Equal(a * point.x + b, point.y);
 	}
 }
+
+bool Surface::IsContinuationOfAnotherSurface(const Surface& another_surface) const
+{
+	bool has_common_point = p1 == another_surface.p1 || p1 == another_surface.p2 || p2 == another_surface.p1 || p2 == another_surface.p2;
+	return has_common_point && Equal(AngleCoefficient(), another_surface.AngleCoefficient());
+}
+
+float Surface::AngleCoefficient() const
+{
+	return (p2.y - p1.y) / (p2.x - p1.x);
+}

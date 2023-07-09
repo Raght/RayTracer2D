@@ -1,4 +1,4 @@
 #pragma once
 #include "olcPixelGameEngine.h"
 
-#define MT_AVX 0
+#define MT_AVX 1
