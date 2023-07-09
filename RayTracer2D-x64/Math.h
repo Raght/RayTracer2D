@@ -3,7 +3,7 @@
 
 
 inline float const PI = 3.141592653589793238462643383279f;
-inline float const EPSILON = 1e-6f;
+inline float const EPSILON = 1e-5f;
 
 bool InRange(float number, float range_min, float range_max);
 

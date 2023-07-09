@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include <execution>
+#include "wtypes.h"
 #include "Math.h"
 #include "Collision.h"
 #include "Physics.h"
@@ -171,6 +172,7 @@ private:
 	vector<Surface> surfaces;
 	bool hit_corner = false;
 	olc::vf2d corner_position;
+	int index_ray_simulated;
 
 
 	SurfaceType surface_type = SurfaceType::REFLECTIVE;
@@ -545,7 +547,7 @@ public:
 #endif
 		if (!is_constructing && !is_cutting)
 		{
-			for (int index_ray_simulated = 0; index_ray_simulated < rays_simulated; index_ray_simulated++)
+			for (index_ray_simulated = 0; index_ray_simulated < rays_simulated; index_ray_simulated++)
 			{
 #if MT_AVX
 				for (olc::vf2d& intersection : intersections_per_surface)
@@ -634,6 +636,7 @@ public:
 
 				if (intersections.size() == 0)
 				{
+					index_ray_simulated++;
 					DrawRay(first_ray);
 					break;
 				}
@@ -692,6 +695,8 @@ public:
 				if (hit_corner)
 				{
 					corner_position = closest_intersection;
+
+					index_ray_simulated++;
 
 					DrawRay(first_ray, corner_position);
 
@@ -796,7 +801,8 @@ public:
 
 		// Draw lines count
 		DrawStringUpLeftCorner(olc::vi2d{ 0, 0 },
-			"SURFACES COUNT: " + to_string(surfaces.size()) + " | MAX RAYS: " + to_string(rays_simulated),
+			"SURFACES COUNT: " + to_string(surfaces.size()) + " | " + 
+			"MAX RAYS : " + to_string(rays_simulated) + "/" + to_string(index_ray_simulated),
 			UI_text_color);
 
 		if (is_cutting)
@@ -857,26 +863,54 @@ float ConvertBitIntegerTofloat(uint64_t num)
 	return *(float*)(uint64_t*)&num;
 }
 
+void GetDesktopResolution(int& horizontal, int& vertical)
+{
+	RECT desktop;
+	// Get a handle to the desktop window
+	const HWND hDesktop = GetDesktopWindow();
+	// Get the size of screen to the variable desktop
+	GetWindowRect(hDesktop, &desktop);
+	// The top left corner will have coordinates (0,0)
+	// and the bottom right corner will have coordinates
+	// (horizontal, vertical)
+	horizontal = desktop.right;
+	vertical = desktop.bottom;
+}
+
+
 int main()
 {
 	olc::GraphicsMode graphics_mode;
 
 	vector<olc::GraphicsMode> graphics_modes;
+
+	int screen_width, screen_height;
+	GetDesktopResolution(screen_width, screen_height);
+
+	graphics_modes.push_back({ screen_width, screen_height, 1, 1, true });
+	graphics_modes.push_back({ screen_width / 2, screen_height / 2, 2, 2, true });
 	graphics_modes.push_back({ 1600, 900, 1, 1 });
-	graphics_modes.push_back({ 1280, 720, 1, 1 });
 	graphics_modes.push_back({ 854,  480, 2, 2 });
+	graphics_modes.push_back({ 532,  300, 3, 3 });
+	graphics_modes.push_back({ 1280, 720, 1, 1 });
 	graphics_modes.push_back({ 640,  360, 2, 2 });
 
-	cout << "Mode  Resolution  Pixel size \n";
-	cout << "1     1600x900    1x1        \n";
-	cout << "2     1280x720    1x1        \n";
-	cout << "3     854x480     2x2        \n";
-	cout << "4     640x360     2x2        \n";
-	cout << "5     Custom      Custom     \n";
+	cout << "Mode | Resolution   | Pixel size \n";
+	cout << "            FULLSCREEN           \n";
+	cout << "1    | FULLSCREEN   | 1x1        \n";
+	cout << "2    | FULLSCREEN/2 | 2x2        \n";
+	cout << "             FULL HD             \n";
+	cout << "3    | 1600x900     | 1x1        \n";
+	cout << "4    | 854x480      | 2x2        \n";
+	cout << "5    | 532x300      | 3x3        \n";
+	cout << "                HD               \n";
+	cout << "6    | 1280x720     | 1x1        \n";
+	cout << "7    | 640x360      | 2x2        \n";
+	cout << "8    | Custom       | Custom     \n";
 
 	while (true)
 	{
-		int mode = 3;
+		int mode = 5;
 		cout << "Choose mode: ";
 		cin >> mode;
 
