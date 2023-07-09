@@ -897,7 +897,7 @@ int main()
 
 	cout << "|----------------------------------|\n";
 	cout << "| Mode | Resolution   | Pixel size |\n";
-	cout << "|-----------  FULLSCREEN  ---------|\n";
+	cout << "|----------  FULL SCREEN  ---------|\n";
 	cout << "| 1    | FULLSCREEN   | 1x1        |\n";
 	cout << "| 2    | FULLSCREEN/2 | 2x2        |\n";
 	cout << "|------------  FULL HD  -----------|\n";
