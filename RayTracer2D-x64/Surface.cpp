@@ -2,7 +2,7 @@
 
 
 Surface::Surface()
-	: Line()
+	: Segment()
 {
 	is_reflective = false;
 	is_refractive = !is_reflective;

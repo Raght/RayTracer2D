@@ -6,7 +6,7 @@
 
 enum class SurfaceType { REFLECTIVE, REFRACTIVE };
 
-struct Surface : Line
+struct Surface : Segment
 {
 	Surface();
 	Surface(olc::vf2d point1, olc::vf2d point2);
@@ -24,10 +24,9 @@ struct Surface : Line
 
 	float AngleCoefficient() const;
 
-
+	float refractive_index;
 	bool is_reflective;
 	bool is_refractive;
-	float refractive_index;
 
 	float extension;
 };

@@ -15,7 +15,7 @@
 #include "Range.h"
 #include "Constants.h"
 #include "CollisionAVX.h"
-constexpr int NUMBERS_PER_AVX_REGISTER = 8;
+
 
 using namespace std;
 
@@ -33,6 +33,26 @@ namespace std
 	};
 }
 
+
+uint64_t float_as_uint64_t(float a)
+{
+	return *(uint64_t*)&a;
+}
+
+float uint64_t_as_float(uint64_t a)
+{
+	return *(float*)&a;
+}
+
+uint32_t float_as_uint32_t(float a)
+{
+	return *(uint32_t*)&a;
+}
+
+float uint32_t_as_float(uint32_t a)
+{
+	return *(float*)&a;
+}
 
 
 
@@ -153,6 +173,29 @@ private:
 		is_cutting_during_construction = false;
 	}
 
+	void AddSurface(const Surface& surface)
+	{
+		surfaces.push_back(surface);
+		segments.push_back(Segment(surface.p1, surface.p2));
+	}
+
+	inline void RemoveSurface(int i)
+	{
+		surfaces.erase(surfaces.begin() + i);
+		segments.erase(segments.begin() + i);
+	}
+
+	inline void RemoveSurface(std::vector<Surface>::iterator it)
+	{
+		RemoveSurface(it - surfaces.begin());
+	}
+
+	inline void ClearSurfaces()
+	{
+		surfaces.clear();
+		segments.clear();
+	}
+
 
 	bool debug_mode = false;
 	bool debug_show_ray_intersections = true;
@@ -170,6 +213,7 @@ private:
 	
 	Ray light_ray;
 	vector<Surface> surfaces;
+	vector<Segment> segments;
 	bool hit_corner = false;
 	olc::vf2d corner_position;
 	int index_ray_simulated;
@@ -262,7 +306,7 @@ public:
 				{
 					for (int y2 = ScreenHeight() - offset_y; y2 > offset_y && surfaces_counter < max_surfaces; y2--)
 					{
-						surfaces.push_back(Surface({ (float)offset_x, (float)y1 }, { float(ScreenWidth() - offset_x), (float)y2 }, SurfaceType::REFLECTIVE));
+						AddSurface(Surface({ (float)offset_x, (float)y1 }, { float(ScreenWidth() - offset_x), (float)y2 }, SurfaceType::REFLECTIVE));
 						surfaces_counter++;
 					}
 				}
@@ -273,7 +317,7 @@ public:
 				{
 					for (int x = offset_x; x < ScreenWidth() - offset_x && surfaces_counter < max_surfaces; x++)
 					{
-						surfaces.push_back(Surface({ (float)x, (float)y }, { float(x + 1), (float)y }, SurfaceType::REFLECTIVE));
+						AddSurface(Surface({ (float)x, (float)y }, { float(x + 1), (float)y }, SurfaceType::REFLECTIVE));
 						surfaces_counter++;
 					}
 				}
@@ -284,10 +328,10 @@ public:
 			max_rays_simulated = 256;
 			rays_simulated = max_rays_simulated;
 			
-			surfaces.push_back(Surface(point, point + size.vector_y(), SurfaceType::REFLECTIVE));
-			surfaces.push_back(Surface(point + size.vector_y(), point + size, SurfaceType::REFLECTIVE));
-			surfaces.push_back(Surface(point + size, point + size.vector_x(), SurfaceType::REFLECTIVE));
-			surfaces.push_back(Surface(point + size.vector_x(), point, SurfaceType::REFLECTIVE));
+			AddSurface(Surface(point, point + size.vector_y(), SurfaceType::REFLECTIVE));
+			AddSurface(Surface(point + size.vector_y(), point + size, SurfaceType::REFLECTIVE));
+			AddSurface(Surface(point + size, point + size.vector_x(), SurfaceType::REFLECTIVE));
+			AddSurface(Surface(point + size.vector_x(), point, SurfaceType::REFLECTIVE));
 		}
 
 		return true;
@@ -438,7 +482,7 @@ public:
 					if (nearest_point_found)
 						first_point_constructed = false;
 					
-					surfaces.push_back(surface_in_construction);
+					AddSurface(surface_in_construction);
 					surface_in_construction.p1 = surface_in_construction.p2;
 				}
 			}
@@ -516,7 +560,7 @@ public:
 
 		if (GetKey(olc::C).bPressed)
 		{
-			surfaces.clear();
+			ClearSurfaces();
 			is_constructing = false;
 			first_point_constructed = false;
 			is_cutting = false;
@@ -532,7 +576,7 @@ public:
 			draw_normals = !draw_normals;
 
 		if (GetKey(olc::CTRL).bHeld && GetKey(olc::Z).bPressed && surfaces.size() > 0)
-			surfaces.erase(surfaces.end() - 1);
+			RemoveSurface(surfaces.end() - 1);
 
 		Ray first_ray = light_ray;
 		Ray second_ray = first_ray;
@@ -599,6 +643,87 @@ public:
 					}
 				}
 #else
+
+#if OPTIMIZED
+				vector<Segment> segments_collided;
+				vector<int> segments_indexes;
+				segments_collided.reserve(segments.size() / 4);
+				segments_indexes.reserve(segments.size() / 4);
+#if !OPTIMIZED_AVX
+				for (int i = 0; i < segments.size(); i++)
+				{
+					if (RayLineVsSegment(first_ray, segments[i]))
+					{
+						segments_collided.push_back(segments[i]);
+						segments_indexes.push_back(i);
+					}
+				}
+#else
+				int segments_left_to_check_to_collide = segments.size() % NUMBERS_PER_AVX_REGISTER;
+				for (int i = 0; i < segments.size() - segments_left_to_check_to_collide; i += NUMBERS_PER_AVX_REGISTER)
+				{
+					__m256 _ray_points_towards_surface = _RayLineVsSegmentsAVX(first_ray, segments, i);
+
+					for (int j = 0; j < NUMBERS_PER_AVX_REGISTER; j++)
+					{
+						bool ray_points_towards_surface = bool(_ray_points_towards_surface.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j]);
+						if (ray_points_towards_surface)
+						{
+							segments_collided.push_back(segments[i + j]);
+							segments_indexes.push_back(i + j);
+						}
+					}
+				}
+
+				for (int i = segments.size() - segments_left_to_check_to_collide; i < segments.size(); i++)
+				{
+					if (RayLineVsSegment(first_ray, segments[i]))
+					{
+						segments_collided.push_back(segments[i]);
+						segments_indexes.push_back(i);
+					}
+				}
+#endif
+				if (index_ray_simulated == 0)
+					DrawStringUpRightCorner({ ScreenWidth(), 8 * UI_character_size }, to_string(segments_collided.size()), UI_text_color);
+
+				vector<olc::vf2d> intersections;
+				vector<int> indexes;
+
+				int segments_collided_left_to_check = segments_collided.size() % NUMBERS_PER_AVX_REGISTER;
+
+				for (int i = 0; i < segments_collided.size() - segments_collided_left_to_check; i += NUMBERS_PER_AVX_REGISTER)
+				{
+					__m256 _inter_x, _inter_y;
+					CollisionInfoAVXRegisters collision_infos = _RayVsSegmentsAVX(first_ray, segments_collided, i, _inter_x, _inter_y);
+
+					for (int j = 0; j < NUMBERS_PER_AVX_REGISTER; j++)
+					{
+						bool intersect = bool(collision_infos._intersect.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j]);
+						bool coincide = bool(collision_infos._coincide.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j]);
+						if (intersect && !coincide && nearest_surface != segments_collided[i + j])
+						{
+							intersections.push_back(olc::vf2d(
+								_inter_x.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j],
+								_inter_y.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j])
+							);
+							indexes.push_back(segments_indexes[i + j]);
+						}
+					}
+				}
+
+				for (int i = segments_collided.size() - segments_collided_left_to_check; i < segments_collided.size(); i++)
+				{
+					olc::vf2d intersection_point;
+					CollisionInfo collision_info = RayVsSegment(first_ray, segments_collided[i], intersection_point);
+					if (collision_info.intersect && !collision_info.coincide && nearest_surface != segments_collided[i])
+					{
+						intersections.push_back(intersection_point);
+						indexes.push_back(segments_indexes[i]);
+					}
+				}
+
+#else
 				vector<olc::vf2d> intersections;
 				vector<int> indexes;
 
@@ -632,6 +757,7 @@ public:
 						indexes.push_back(i);
 					}
 				}
+#endif
 #endif
 
 				if (intersections.size() == 0)
@@ -799,7 +925,7 @@ public:
 
 		// Draw UI
 
-		// Draw lines count
+		// Draw surfaces count
 		DrawStringUpLeftCorner(olc::vi2d{ 0, 0 },
 			"SURFACES COUNT: " + to_string(surfaces.size()) + " | " + 
 			"MAX RAYS : " + to_string(rays_simulated) + "/" + to_string(index_ray_simulated),

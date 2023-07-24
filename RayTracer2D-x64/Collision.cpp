@@ -15,7 +15,7 @@ CollisionInfo::CollisionInfo(bool intersect, bool coincide)
 	this->coincide = coincide;
 }
 
-CollisionInfo LineVsLine(const Line& line1, const Line& line2, olc::vf2d& intersectionPoint)
+CollisionInfo LineVsLine(const Segment& line1, const Segment& line2, olc::vf2d& intersectionPoint)
 {
 	/*
 		{ a1 * x + b1 = y
@@ -153,7 +153,7 @@ CollisionInfo LineVsLine(const Line& line1, const Line& line2, olc::vf2d& inters
 	}
 }
 
-CollisionInfo LineVsSurface(const Line& line, const Surface& surface, olc::vf2d& intersectionPoint)
+CollisionInfo LineVsSurface(const Segment& line, const Surface& surface, olc::vf2d& intersectionPoint)
 {
 	CollisionInfo collision_info = LineVsLine(line, surface, intersectionPoint);
 
@@ -167,6 +167,30 @@ CollisionInfo LineVsSurface(const Line& line, const Surface& surface, olc::vf2d&
 	bool point_lies_on_surface = (intersectionPoint - surface.p1).dot(intersectionPoint - surface.p2) < surface_limit_dot_product;
 
 	if (collision_info.intersect && point_lies_on_surface)
+	{
+		return collision_info;
+	}
+
+	return CollisionInfo(false, false);
+}
+
+CollisionInfo SegmentVsSegment(const Segment& surface1, const Segment& surface2, olc::vf2d& intersectionPoint)
+{
+	CollisionInfo collision_info = LineVsLine(surface1, surface2, intersectionPoint);
+
+	if (collision_info.coincide)
+	{
+		return collision_info;
+	}
+
+	float surface1_length = (surface1.p2 - surface1.p1).mag();
+	float surface2_length = (surface2.p2 - surface2.p1).mag();
+	float surface1_limit_dot_product = SURFACES_EXTENSION * (surface1_length + SURFACES_EXTENSION);
+	float surface2_limit_dot_product = SURFACES_EXTENSION * (surface2_length + SURFACES_EXTENSION);
+	bool point_lies_on_surface1 = (intersectionPoint - surface1.p1).dot(intersectionPoint - surface1.p2) < surface1_limit_dot_product;
+	bool point_lies_on_surface2 = (intersectionPoint - surface2.p1).dot(intersectionPoint - surface2.p2) < surface2_limit_dot_product;
+
+	if (collision_info.intersect && point_lies_on_surface1 && point_lies_on_surface2)
 	{
 		return collision_info;
 	}
@@ -204,11 +228,49 @@ CollisionInfo SurfaceVsSurface(const Surface& surface1, const Surface& surface2)
 	return SurfaceVsSurface(surface1, surface2, intersection_point);
 }
 
+CollisionInfo RayVsSegment(const Ray& ray, const Segment& segment, olc::vf2d& intersectionPoint)
+{
+	Segment ray_as_segment = Segment(ray.origin, ray.EndPoint());
+
+	CollisionInfo collision_info = LineVsLine(ray_as_segment, segment, intersectionPoint);
+
+	if (collision_info.coincide)
+	{
+		return collision_info;
+	}
+
+	float surface1_length = (ray_as_segment.p2 - ray_as_segment.p1).mag();
+	float surface2_length = (segment.p2 - segment.p1).mag();
+	float surface1_limit_dot_product = 0;
+	float surface2_limit_dot_product = SURFACES_EXTENSION * (surface2_length + SURFACES_EXTENSION);
+	bool point_lies_on_surface1 = (intersectionPoint - ray_as_segment.p1).dot(intersectionPoint - ray_as_segment.p2) < surface1_limit_dot_product;
+	bool point_lies_on_surface2 = (intersectionPoint - segment.p1).dot(intersectionPoint - segment.p2) < surface2_limit_dot_product;
+
+	if (collision_info.intersect && point_lies_on_surface1 && point_lies_on_surface2)
+	{
+		return collision_info;
+	}
+
+	return CollisionInfo(false, false);
+}
+
 CollisionInfo RayVsSurface(const Ray& ray, const Surface& surface, olc::vf2d& intersectionPoint)
 {
 	Surface ray_as_surface = Surface(ray.origin, ray.EndPoint());
 	ray_as_surface.extension = 0.0;
 	return SurfaceVsSurface(ray_as_surface, surface, intersectionPoint);
+}
+
+bool RayLineVsSegment(const Ray& ray, const Segment& segment)
+{
+	olc::vf2d ray_origin_to_p1 = segment.p1 - ray.origin;
+	olc::vf2d ray_origin_to_p2 = segment.p2 - ray.origin;
+	bool ray_points_towards_surface = ray_origin_to_p1.cross(ray.direction) * ray_origin_to_p2.cross(ray.direction) <= 0.0f;
+	//float dot1 = ray_origin_to_p1.dot(ray.direction);
+	//float dot2 = ray_origin_to_p2.dot(ray.direction);
+	//bool line_intersects_surface = (dot1 >= 0.0f && dot2 >= 0.0f);
+
+	return ray_points_towards_surface;
 }
 
 bool PointVsRect(olc::vf2d point, olc::vf2d rectangle_position, olc::vf2d rectangle_size)

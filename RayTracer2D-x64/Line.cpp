@@ -1,19 +1,19 @@
 #include "Line.h"
 
 
-Line::Line()
+Segment::Segment()
 {
 	p1 = olc::vf2d(0, 0);
 	p2 = olc::vf2d(1, 0);
 }
 
-Line::Line(olc::vf2d point1, olc::vf2d point2)
+Segment::Segment(olc::vf2d point1, olc::vf2d point2)
 {
 	p1 = point1;
 	p2 = point2;
 }
 
-olc::vf2d Line::Normal(const olc::vf2d& lightRayDirection) const
+olc::vf2d Segment::Normal(const olc::vf2d& lightRayDirection) const
 {
 	olc::vf2d line_vector = p1 - p2;
 
@@ -29,13 +29,13 @@ olc::vf2d Line::Normal(const olc::vf2d& lightRayDirection) const
 	return normal;
 }
 
-bool Line::operator == (const Line& other)
+bool Segment::operator == (const Segment& other)
 {
 	return (p1 == other.p1 && p2 == other.p2) || (p1 == other.p2 && p2 == other.p1);
 }
 
-bool Line::operator != (const Line& other)
+bool Segment::operator != (const Segment& other)
 {
-	Line& line = *this;
+	Segment& line = *this;
 	return !(line == other);
 }
