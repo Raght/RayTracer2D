@@ -583,36 +583,45 @@ public:
 		Surface nearest_surface = null_surface;
 		hit_corner = false;
 
-
-		int surfaces_left_to_check = surfaces.size() % NUMBERS_PER_AVX_REGISTER;
-
-#if MT_AVX
-		vector<olc::vf2d> intersections_per_surface(surfaces.size() - surfaces_left_to_check, null_point);
-#endif
 		if (!is_constructing && !is_cutting)
 		{
 			for (index_ray_simulated = 0; index_ray_simulated < rays_simulated; index_ray_simulated++)
 			{
-#if MT_AVX
-				for (olc::vf2d& intersection : intersections_per_surface)
+				vector<Segment> segments_collided;
+				vector<int> segments_indexes;
+				segments_collided.reserve(segments.size());
+				segments_indexes.reserve(segments.size());
+				
+				for (int i = 0; i < segments.size(); i++)
 				{
-					intersection = null_point;
+					if (RayLineVsSegment(first_ray, segments[i]))
+					{
+						segments_collided.push_back(segments[i]);
+						segments_indexes.push_back(i);
+					}
 				}
 
-				Range intersections_indexes_range(0, intersections_per_surface.size(), NUMBERS_PER_AVX_REGISTER);
+
+				int segments_collided_left_to_check = segments_collided.size() % NUMBERS_PER_AVX_REGISTER;
+
+#if MT_AVX
+				std::vector<olc::vf2d> intersections_per_segment;
+				intersections_per_segment.resize(segments_collided.size(), null_point);
+
+				Range intersections_indexes_range(0, intersections_per_segment.size() - segments_collided_left_to_check, NUMBERS_PER_AVX_REGISTER);
 
 				std::for_each(std::execution::par, intersections_indexes_range.begin(), intersections_indexes_range.end(),
 					[&](int i) {
 						__m256 _inter_x, _inter_y;
-						CollisionInfoAVXRegisters collision_infos = _RayVsSurfaceAVX(first_ray, surfaces, i, _inter_x, _inter_y);
+						CollisionInfoAVXRegisters collision_infos = _RayVsSegmentsAVX(first_ray, segments_collided, i, _inter_x, _inter_y);
 
 						for (int j = 0; j < NUMBERS_PER_AVX_REGISTER; j++)
 						{
 							bool intersect = bool(collision_infos._intersect.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j]);
 							bool coincide = bool(collision_infos._coincide.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j]);
-							if (intersect && !coincide && nearest_surface != surfaces[i + j])
+							if (intersect && !coincide && nearest_surface != segments_collided[i + j])
 							{
-								intersections_per_surface[i + j] = olc::vf2d(
+								intersections_per_segment[i + j] = olc::vf2d(
 									_inter_x.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j],
 									_inter_y.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j]
 								);
@@ -622,75 +631,23 @@ public:
 
 				vector<olc::vf2d> intersections;
 				vector<int> indexes;
-				for (int i = 0; i < intersections_per_surface.size(); i++)
+				intersections.reserve(segments_collided.size());
+				indexes.reserve(segments_collided.size());
+
+				for (int i = 0; i < intersections_per_segment.size(); i++)
 				{
-					olc::vf2d& intersection = intersections_per_surface[i];
+					olc::vf2d& intersection = intersections_per_segment[i];
 					if (intersection != null_point)
 					{
 						intersections.push_back(intersection);
-						indexes.push_back(i);
-					}
-				}
-
-				for (int i = surfaces.size() - surfaces_left_to_check; i < surfaces.size(); i++)
-				{
-					olc::vf2d intersection_point;
-					CollisionInfo collision_info = RayVsSurface(first_ray, surfaces[i], intersection_point);
-					if (collision_info.intersect && !collision_info.coincide && nearest_surface != surfaces[i])
-					{
-						intersections.push_back(intersection_point);
-						indexes.push_back(i);
+						indexes.push_back(segments_indexes[i]);
 					}
 				}
 #else
-
-#if OPTIMIZED
-				vector<Segment> segments_collided;
-				vector<int> segments_indexes;
-				segments_collided.reserve(segments.size() / 4);
-				segments_indexes.reserve(segments.size() / 4);
-#if !OPTIMIZED_AVX
-				for (int i = 0; i < segments.size(); i++)
-				{
-					if (RayLineVsSegment(first_ray, segments[i]))
-					{
-						segments_collided.push_back(segments[i]);
-						segments_indexes.push_back(i);
-					}
-				}
-#else
-				int segments_left_to_check_to_collide = segments.size() % NUMBERS_PER_AVX_REGISTER;
-				for (int i = 0; i < segments.size() - segments_left_to_check_to_collide; i += NUMBERS_PER_AVX_REGISTER)
-				{
-					__m256 _ray_points_towards_surface = _RayLineVsSegmentsAVX(first_ray, segments, i);
-
-					for (int j = 0; j < NUMBERS_PER_AVX_REGISTER; j++)
-					{
-						bool ray_points_towards_surface = bool(_ray_points_towards_surface.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j]);
-						if (ray_points_towards_surface)
-						{
-							segments_collided.push_back(segments[i + j]);
-							segments_indexes.push_back(i + j);
-						}
-					}
-				}
-
-				for (int i = segments.size() - segments_left_to_check_to_collide; i < segments.size(); i++)
-				{
-					if (RayLineVsSegment(first_ray, segments[i]))
-					{
-						segments_collided.push_back(segments[i]);
-						segments_indexes.push_back(i);
-					}
-				}
-#endif
-				if (index_ray_simulated == 0)
-					DrawStringUpRightCorner({ ScreenWidth(), 8 * UI_character_size }, to_string(segments_collided.size()), UI_text_color);
-
 				vector<olc::vf2d> intersections;
 				vector<int> indexes;
-
-				int segments_collided_left_to_check = segments_collided.size() % NUMBERS_PER_AVX_REGISTER;
+				intersections.reserve(segments_collided.size());
+				indexes.reserve(segments_collided.size());
 
 				for (int i = 0; i < segments_collided.size() - segments_collided_left_to_check; i += NUMBERS_PER_AVX_REGISTER)
 				{
@@ -711,7 +668,7 @@ public:
 						}
 					}
 				}
-
+#endif
 				for (int i = segments_collided.size() - segments_collided_left_to_check; i < segments_collided.size(); i++)
 				{
 					olc::vf2d intersection_point;
@@ -723,42 +680,6 @@ public:
 					}
 				}
 
-#else
-				vector<olc::vf2d> intersections;
-				vector<int> indexes;
-
-				for (int i = 0; i < surfaces.size() - surfaces_left_to_check; i += NUMBERS_PER_AVX_REGISTER)
-				{
-					__m256 _inter_x, _inter_y;
-					CollisionInfoAVXRegisters collision_infos = _RayVsSurfaceAVX(first_ray, surfaces, i, _inter_x, _inter_y);
-
-					for (int j = 0; j < NUMBERS_PER_AVX_REGISTER; j++)
-					{
-						bool intersect = bool(collision_infos._intersect.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j]);
-						bool coincide = bool(collision_infos._coincide.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j]);
-						if (intersect && !coincide && nearest_surface != surfaces[i + j])
-						{
-							intersections.push_back(olc::vf2d(
-								_inter_x.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j],
-								_inter_y.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j])
-							);
-							indexes.push_back(i + j);
-						}
-					}
-				}
-
-				for (int i = surfaces.size() - surfaces_left_to_check; i < surfaces.size(); i++)
-				{
-					olc::vf2d intersection_point;
-					CollisionInfo collision_info = RayVsSurface(first_ray, surfaces[i], intersection_point);
-					if (collision_info.intersect && !collision_info.coincide && nearest_surface != surfaces[i])
-					{
-						intersections.push_back(intersection_point);
-						indexes.push_back(i);
-					}
-				}
-#endif
-#endif
 
 				if (intersections.size() == 0)
 				{
