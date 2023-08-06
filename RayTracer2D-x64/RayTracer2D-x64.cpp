@@ -207,8 +207,11 @@ private:
 
 	vector<olc::vf2d> debug_rays_intersections;
 
-	bool surfaces_stress_test1 = false;
-	bool surfaces_stress_test2 = true;
+	bool enable_surface_stress_test = true;
+	enum class SurfaceStressTest {
+		CollisionHeavy, CollisionSparse, CollsionHeavyAndDrawing
+	};
+	SurfaceStressTest surface_stress_test = SurfaceStressTest::CollisionHeavy;
 
 	
 	Ray light_ray;
@@ -287,7 +290,7 @@ public:
 			min_rays_simulated = 1;
 		}
 
-		if (surfaces_stress_test1 || surfaces_stress_test2)
+		if (enable_surface_stress_test)
 		{
 			int max_surfaces = 16000;
 			int surfaces_counter = 0;
@@ -297,21 +300,21 @@ public:
 			int rect_offset_x = 5;
 			int rect_offset_y = 20;
 			int height = 30;
-			olc::vf2d point = { float(offset_x + rect_offset_x), (float)height };
-			olc::vf2d size = { float(ScreenWidth() - 2 * offset_x - 2 * rect_offset_x), float(offset_y - height - rect_offset_y) };
 
-			if (surfaces_stress_test1)
+			if (surface_stress_test == SurfaceStressTest::CollisionHeavy)
 			{
-				for (int y1 = ScreenHeight() - offset_y; y1 > offset_y && surfaces_counter < max_surfaces; y1--)
+				offset_x = ScreenWidth() / 2 - 10;
+				rect_offset_x = 0;
+
+				for (float y = ScreenHeight() - offset_y; y > offset_y && surfaces_counter < max_surfaces; y -= 0.01f)
 				{
-					for (int y2 = ScreenHeight() - offset_y; y2 > offset_y && surfaces_counter < max_surfaces; y2--)
-					{
-						AddSurface(Surface({ (float)offset_x, (float)y1 }, { float(ScreenWidth() - offset_x), (float)y2 }, SurfaceType::REFLECTIVE));
-						surfaces_counter++;
-					}
+					float x_begin = offset_x;
+					float x_end = ScreenWidth() - offset_x;
+					AddSurface(Surface({ x_begin, y }, { x_end, y }, SurfaceType::REFLECTIVE));
+					surfaces_counter++;
 				}
 			}
-			else if (surfaces_stress_test2)
+			else if (surface_stress_test == SurfaceStressTest::CollisionSparse)
 			{
 				for (int y = ScreenHeight() - offset_y; y > offset_y && surfaces_counter < max_surfaces; y--)
 				{
@@ -322,6 +325,20 @@ public:
 					}
 				}
 			}
+			else if (surface_stress_test == SurfaceStressTest::CollsionHeavyAndDrawing)
+			{
+				for (int y1 = ScreenHeight() - offset_y; y1 > offset_y && surfaces_counter < max_surfaces; y1--)
+				{
+					for (int y2 = ScreenHeight() - offset_y; y2 > offset_y && surfaces_counter < max_surfaces; y2--)
+					{
+						AddSurface(Surface({ (float)offset_x, (float)y1 }, { float(ScreenWidth() - offset_x), (float)y2 }, SurfaceType::REFLECTIVE));
+						surfaces_counter++;
+					}
+				}
+			}
+
+			olc::vf2d point = { float(offset_x + rect_offset_x), (float)height };
+			olc::vf2d size = { float(ScreenWidth() - 2 * offset_x - 2 * rect_offset_x), float(offset_y - height - rect_offset_y) };
 
 			light_ray.origin = point + size.vector_y() / 2 + olc::vf2d(2.0f, 0.0f);
 			
@@ -594,7 +611,7 @@ public:
 				
 				for (int i = 0; i < segments.size(); i++)
 				{
-					if (RayLineVsSegment(first_ray, segments[i]))
+					if (RayVsSegment(first_ray, segments[i]))
 					{
 						segments_collided.push_back(segments[i]);
 						segments_indexes.push_back(i);
@@ -603,7 +620,7 @@ public:
 
 
 				int segments_collided_left_to_check = segments_collided.size() % NUMBERS_PER_AVX_REGISTER;
-
+				segments_collided_left_to_check = segments_collided.size();
 #if MT_AVX
 				std::vector<olc::vf2d> intersections_per_segment;
 				intersections_per_segment.resize(segments_collided.size(), null_point);
@@ -652,7 +669,7 @@ public:
 				for (int i = 0; i < segments_collided.size() - segments_collided_left_to_check; i += NUMBERS_PER_AVX_REGISTER)
 				{
 					__m256 _inter_x, _inter_y;
-					CollisionInfoAVXRegisters collision_infos = _RayVsSegmentsAVX(first_ray, segments_collided, i, _inter_x, _inter_y);
+					CollisionInfoAVXRegisters collision_infos = _RayLineVsSegmentsLinesAVX(first_ray, segments_collided, i, _inter_x, _inter_y);
 
 					for (int j = 0; j < NUMBERS_PER_AVX_REGISTER; j++)
 					{

@@ -24,7 +24,7 @@ inline __m256 _mm256_eq_zero_ps(const __m256& _a, const __m256& _minus_bound, co
 }
 
 
-CollisionInfoAVXRegisters _RayVsSegmentsAVX(const Ray& ray, const std::vector<Segment>& segments, int index_first_surface, __m256& _inter_x, __m256& _inter_y)
+CollisionInfoAVXRegisters _RayLineVsSegmentsLinesAVX(const Ray& ray, const std::vector<Segment>& segments, int index_first_surface, __m256& _inter_x, __m256& _inter_y)
 {
 	/*
 		{ a1 * x + b1 = y
@@ -183,56 +183,56 @@ CollisionInfoAVXRegisters _RayVsSegmentsAVX(const Ray& ray, const std::vector<Se
 	_inter_y = _mm256_or_ps(_inter_y, _mm256_and_ps(_aa, _mm256_add_ps(_mm256_mul_ps(_inter_x, _a1), _b1)));
 
 
-	float ray1_limit_dot_product = 0.0;
-
-	__m256 _l2length;
-	__m256 _l2dxsqr, _l2dysqr;
-	__m256 _l2extension;
-	__m256 _l1_limit_dot_product, _l2_limit_dot_product;
-	__m256 _dx_l1p1_to_inter, _dx_l1p2_to_inter, _dx_l2p1_to_inter, _dx_l2p2_to_inter;
-	__m256 _dy_l1p1_to_inter, _dy_l1p2_to_inter, _dy_l2p1_to_inter, _dy_l2p2_to_inter;
-	__m256 _l1_dot_product, _l2_dot_product;
-
-	_l1_limit_dot_product = _mm256_set1_ps(ray1_limit_dot_product);
-
-	_l2dxsqr = _mm256_mul_ps(_dx2, _dx2);
-	_l2dysqr = _mm256_mul_ps(_dy2, _dy2);
-	_l2length = _mm256_add_ps(_l2dxsqr, _l2dysqr);
-	_l2length = _mm256_sqrt_ps(_l2length);
-
-	_l2extension = _mm256_set1_ps(SURFACES_EXTENSION);
-	_l2_limit_dot_product = _mm256_add_ps(_l2extension, _l2length);
-	_l2_limit_dot_product = _mm256_mul_ps(_l2_limit_dot_product, _l2extension);
-
-	_dx_l1p1_to_inter = _mm256_sub_ps(_inter_x, _l1p1x);
-	_dx_l1p2_to_inter = _mm256_sub_ps(_inter_x, _l1p2x);
-	_dx_l2p1_to_inter = _mm256_sub_ps(_inter_x, _l2p1x);
-	_dx_l2p2_to_inter = _mm256_sub_ps(_inter_x, _l2p2x);
-	_dy_l1p1_to_inter = _mm256_sub_ps(_inter_y, _l1p1y);
-	_dy_l1p2_to_inter = _mm256_sub_ps(_inter_y, _l1p2y);
-	_dy_l2p1_to_inter = _mm256_sub_ps(_inter_y, _l2p1y);
-	_dy_l2p2_to_inter = _mm256_sub_ps(_inter_y, _l2p2y);
-
-	__m256 _product_x_l1_to_inter, _product_y_l1_to_inter;
-	__m256 _product_x_l2_to_inter, _product_y_l2_to_inter;
-
-	_product_x_l1_to_inter = _mm256_mul_ps(_dx_l1p1_to_inter, _dx_l1p2_to_inter);
-	_product_y_l1_to_inter = _mm256_mul_ps(_dy_l1p1_to_inter, _dy_l1p2_to_inter);
-	_product_x_l2_to_inter = _mm256_mul_ps(_dx_l2p1_to_inter, _dx_l2p2_to_inter);
-	_product_y_l2_to_inter = _mm256_mul_ps(_dy_l2p1_to_inter, _dy_l2p2_to_inter);
-
-	_l1_dot_product = _mm256_add_ps(_product_x_l1_to_inter, _product_y_l1_to_inter);
-	_l2_dot_product = _mm256_add_ps(_product_x_l2_to_inter, _product_y_l2_to_inter);
-
-	__m256 _point_lies_on_l1, _point_lies_on_l2;
-
-	_point_lies_on_l1 = _mm256_cmp_ps(_l1_dot_product, _l1_limit_dot_product, _CMP_LT_OQ);
-	_point_lies_on_l2 = _mm256_cmp_ps(_l2_dot_product, _l2_limit_dot_product, _CMP_LT_OQ);
-
-	__m256 _inter_exists_and_lies_on_lines;
-	_inter_exists_and_lies_on_lines = _mm256_and_ps(collision_info._intersect, _point_lies_on_l1);
-	_inter_exists_and_lies_on_lines = _mm256_and_ps(_inter_exists_and_lies_on_lines, _point_lies_on_l2);
-	collision_info._intersect = _mm256_or_ps(collision_info._coincide, _inter_exists_and_lies_on_lines);
+	//float ray1_limit_dot_product = 0.0;
+	//
+	//__m256 _l2length;
+	//__m256 _l2dxsqr, _l2dysqr;
+	//__m256 _l2extension;
+	//__m256 _l1_limit_dot_product, _l2_limit_dot_product;
+	//__m256 _dx_l1p1_to_inter, _dx_l1p2_to_inter, _dx_l2p1_to_inter, _dx_l2p2_to_inter;
+	//__m256 _dy_l1p1_to_inter, _dy_l1p2_to_inter, _dy_l2p1_to_inter, _dy_l2p2_to_inter;
+	//__m256 _l1_dot_product, _l2_dot_product;
+	//
+	//_l1_limit_dot_product = _mm256_set1_ps(ray1_limit_dot_product);
+	//
+	//_l2dxsqr = _mm256_mul_ps(_dx2, _dx2);
+	//_l2dysqr = _mm256_mul_ps(_dy2, _dy2);
+	//_l2length = _mm256_add_ps(_l2dxsqr, _l2dysqr);
+	//_l2length = _mm256_sqrt_ps(_l2length);
+	//
+	//_l2extension = _mm256_set1_ps(SURFACES_EXTENSION);
+	//_l2_limit_dot_product = _mm256_add_ps(_l2extension, _l2length);
+	//_l2_limit_dot_product = _mm256_mul_ps(_l2_limit_dot_product, _l2extension);
+	//
+	//_dx_l1p1_to_inter = _mm256_sub_ps(_inter_x, _l1p1x);
+	//_dx_l1p2_to_inter = _mm256_sub_ps(_inter_x, _l1p2x);
+	//_dx_l2p1_to_inter = _mm256_sub_ps(_inter_x, _l2p1x);
+	//_dx_l2p2_to_inter = _mm256_sub_ps(_inter_x, _l2p2x);
+	//_dy_l1p1_to_inter = _mm256_sub_ps(_inter_y, _l1p1y);
+	//_dy_l1p2_to_inter = _mm256_sub_ps(_inter_y, _l1p2y);
+	//_dy_l2p1_to_inter = _mm256_sub_ps(_inter_y, _l2p1y);
+	//_dy_l2p2_to_inter = _mm256_sub_ps(_inter_y, _l2p2y);
+	//
+	//__m256 _product_x_l1_to_inter, _product_y_l1_to_inter;
+	//__m256 _product_x_l2_to_inter, _product_y_l2_to_inter;
+	//
+	//_product_x_l1_to_inter = _mm256_mul_ps(_dx_l1p1_to_inter, _dx_l1p2_to_inter);
+	//_product_y_l1_to_inter = _mm256_mul_ps(_dy_l1p1_to_inter, _dy_l1p2_to_inter);
+	//_product_x_l2_to_inter = _mm256_mul_ps(_dx_l2p1_to_inter, _dx_l2p2_to_inter);
+	//_product_y_l2_to_inter = _mm256_mul_ps(_dy_l2p1_to_inter, _dy_l2p2_to_inter);
+	//
+	//_l1_dot_product = _mm256_add_ps(_product_x_l1_to_inter, _product_y_l1_to_inter);
+	//_l2_dot_product = _mm256_add_ps(_product_x_l2_to_inter, _product_y_l2_to_inter);
+	//
+	//__m256 _point_lies_on_l1, _point_lies_on_l2;
+	//
+	//_point_lies_on_l1 = _mm256_cmp_ps(_l1_dot_product, _l1_limit_dot_product, _CMP_LT_OQ);
+	//_point_lies_on_l2 = _mm256_cmp_ps(_l2_dot_product, _l2_limit_dot_product, _CMP_LT_OQ);
+	//
+	//__m256 _inter_exists_and_lies_on_lines;
+	//_inter_exists_and_lies_on_lines = _mm256_and_ps(collision_info._intersect, _point_lies_on_l1);
+	//_inter_exists_and_lies_on_lines = _mm256_and_ps(_inter_exists_and_lies_on_lines, _point_lies_on_l2);
+	//collision_info._intersect = _mm256_or_ps(collision_info._coincide, _inter_exists_and_lies_on_lines);
 
 	return collision_info;
 

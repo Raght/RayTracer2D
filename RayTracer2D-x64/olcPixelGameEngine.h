@@ -1674,20 +1674,37 @@ namespace olc
 		int x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
 		dx = x2 - x1; dy = y2 - y1;
 
+		int pixels_counter = 0;
+		int max_pixels_counter = std::max(ScreenWidth(), ScreenHeight());
+
 		auto rol = [&](void) { pattern = (pattern << 1) | (pattern >> 31); return pattern & 1; };
 
 		// straight lines idea by gurkanctn
 		if (dx == 0) // Line is vertical
 		{
 			if (y2 < y1) std::swap(y1, y2);
-			for (y = y1; y <= y2; y++) if (rol()) Draw(x1, y, p);
+			for (y = y1; y <= y2 && pixels_counter <= max_pixels_counter; y++)
+			{
+				if (rol())
+				{
+					Draw(x1, y, p);
+					pixels_counter++;
+				}
+			}
 			return;
 		}
 
 		if (dy == 0) // Line is horizontal
 		{
 			if (x2 < x1) std::swap(x1, x2);
-			for (x = x1; x <= x2; x++) if (rol()) Draw(x, y1, p);
+			for (x = x1; x <= x2 && pixels_counter <= max_pixels_counter; x++)
+			{
+				if (rol())
+				{
+					Draw(x, y1, p);
+					pixels_counter++;
+				}
+			}
 			return;
 		}
 
@@ -1705,9 +1722,13 @@ namespace olc
 				x = x2; y = y2; xe = x1;
 			}
 
-			if (rol()) Draw(x, y, p);
+			if (rol())
+			{
+				Draw(x, y, p);
+				pixels_counter++;
+			}
 
-			for (i = 0; x < xe; i++)
+			for (i = 0; x < xe ; i++)
 			{
 				x = x + 1;
 				if (px < 0)
@@ -1717,7 +1738,11 @@ namespace olc
 					if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) y = y + 1; else y = y - 1;
 					px = px + 2 * (dy1 - dx1);
 				}
-				if (rol()) Draw(x, y, p);
+				if (rol())
+				{
+					Draw(x, y, p);
+					pixels_counter++;
+				}
 			}
 		}
 		else
@@ -1731,7 +1756,11 @@ namespace olc
 				x = x2; y = y2; ye = y1;
 			}
 
-			if (rol()) Draw(x, y, p);
+			if (rol())
+			{
+				Draw(x, y, p);
+				pixels_counter++;
+			}
 
 			for (i = 0; y < ye; i++)
 			{
@@ -1743,8 +1772,16 @@ namespace olc
 					if ((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) x = x + 1; else x = x - 1;
 					py = py + 2 * (dx1 - dy1);
 				}
-				if (rol()) Draw(x, y, p);
+				if (rol())
+				{
+					Draw(x, y, p);
+					pixels_counter++;
+				}
 			}
+		}
+		if (pixels_counter >= max_pixels_counter)
+		{
+			std::cout << "WARNING\n";
 		}
 	}
 

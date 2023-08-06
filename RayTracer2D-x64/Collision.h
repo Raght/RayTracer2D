@@ -32,4 +32,6 @@ CollisionInfo RayVsSurface(const Ray& ray, const Surface& surface, olc::vf2d& in
 
 bool RayLineVsSegment(const Ray& ray, const Segment& surface);
 
+bool RayVsSegment(const Ray& ray, const Segment& segment);
+
 bool PointVsRect(olc::vf2d point, olc::vf2d rectangle_position, olc::vf2d rectangle_size);
