@@ -1,29 +1,96 @@
 #include "CollisionAVX.h"
 
 
-inline __m256 _mm256_xnor_ps(const __m256& _a, const __m256& _b)
+
+#if OPTIMIZED_COLLISION_INTERSECTIONS
+CollisionInfoAVXRegisters _RayLineVsSegmentsLinesAVX(const Ray& ray, const std::vector<Segment>& segments, int index_first_segment, __m256& _inter_x, __m256& _inter_y)
 {
-	return _mm256_cmp_ps(_a, _b, _CMP_EQ_OQ);
+	__m256 _minus_one, _MINUS_EPSILON, _EPSILON, _MINUS_INFINITY, _INFINITY;
+
+	_minus_one = _mm256_set1_ps(-1.0);
+	_MINUS_EPSILON = _mm256_set1_ps(-EPSILON);
+	_EPSILON = _mm256_set1_ps(EPSILON);
+	_MINUS_INFINITY = _mm256_set1_ps((float)-INFINITY);
+	_INFINITY = _mm256_set1_ps((float)INFINITY);
+
+	__m256 _ray_origin_x = _mm256_set1_ps(ray.origin.x);
+	__m256 _ray_origin_y = _mm256_set1_ps(ray.origin.y);
+	__m256 _ray_direction_x = _mm256_set1_ps(ray.direction.x);
+	__m256 _ray_direction_y = _mm256_set1_ps(ray.direction.y);
+
+	int j = index_first_segment;
+	__m256 _segments_p1_x = _mm256_set_ps(
+		segments[j].p1.x, segments[j + 1].p1.x,
+		segments[j + 2].p1.x, segments[j + 3].p1.x,
+		segments[j + 4].p1.x, segments[j + 5].p1.x,
+		segments[j + 6].p1.x, segments[j + 7].p1.x
+	);
+	__m256 _segments_p1_y = _mm256_set_ps(
+		segments[j].p1.y, segments[j + 1].p1.y,
+		segments[j + 2].p1.y, segments[j + 3].p1.y,
+		segments[j + 4].p1.y, segments[j + 5].p1.y,
+		segments[j + 6].p1.y, segments[j + 7].p1.y
+	);
+	__m256 _segments_p2_x = _mm256_set_ps(
+		segments[j].p2.x, segments[j + 1].p2.x,
+		segments[j + 2].p2.x, segments[j + 3].p2.x,
+		segments[j + 4].p2.x, segments[j + 5].p2.x,
+		segments[j + 6].p2.x, segments[j + 7].p2.x
+	);
+	__m256 _segments_p2_y = _mm256_set_ps(
+		segments[j].p2.y, segments[j + 1].p2.y,
+		segments[j + 2].p2.y, segments[j + 3].p2.y,
+		segments[j + 4].p2.y, segments[j + 5].p2.y,
+		segments[j + 6].p2.y, segments[j + 7].p2.y
+	);
+
+	__m256 _ray_origin_to_p1_x, _ray_origin_to_p1_y;
+	__m256 _p1_to_ray_origin_x, _p1_to_ray_origin_y;
+	__m256 _p1_to_p2_x, _p1_to_p2_y;
+
+	_ray_origin_to_p1_x = _mm256_sub_ps(_segments_p1_x, _ray_origin_x);
+	_ray_origin_to_p1_y = _mm256_sub_ps(_segments_p1_y, _ray_origin_y);
+	_p1_to_ray_origin_x = _mm256_sub_ps(_ray_origin_x, _segments_p1_x);
+	_p1_to_ray_origin_y = _mm256_sub_ps(_ray_origin_y, _segments_p1_y);
+	_p1_to_p2_x = _mm256_sub_ps(_segments_p2_x, _segments_p1_x);
+	_p1_to_p2_y = _mm256_sub_ps(_segments_p2_y, _segments_p1_y);
+
+
+	__m256 _length_squared = _mm256_mag_sqr_ps(_ray_origin_to_p1_x, _ray_origin_to_p1_y);
+	__m256 _cross1 = _mm256_cross_abs_ps(_ray_direction_x, _ray_direction_y, _ray_origin_to_p1_x, _ray_origin_to_p1_y);
+	__m256 _dot1 = _mm256_dot_ps(_ray_direction_x, _ray_direction_y, _ray_origin_to_p1_x, _ray_origin_to_p1_y);
+	__m256 _cross2 = _mm256_cross_abs_ps(_p1_to_p2_x, _p1_to_p2_y, _p1_to_ray_origin_x, _p1_to_ray_origin_y);
+	__m256 _dot2 = _mm256_dot_ps(_p1_to_p2_x, _p1_to_p2_y, _p1_to_ray_origin_x, _p1_to_ray_origin_y);
+
+	__m256 _cross1_times_dot2 = _mm256_mul_ps(_cross1, _dot2);
+	__m256 _cross2_times_dot1 = _mm256_mul_ps(_cross2, _dot1);
+	__m256 _length_squared_times_cross2 = _mm256_mul_ps(_length_squared, _cross2);
+	__m256 _dot1_times_sum_of_tangents = _mm256_add_ps(_cross1_times_dot2, _cross2_times_dot1);
+
+	CollisionInfoAVXRegisters collision_info;
+	__m256 _same_angle = _mm256_in_range_ps(_dot1_times_sum_of_tangents, _MINUS_EPSILON, _EPSILON);
+	__m256 _intersect_and_coincide = _mm256_and_ps(_same_angle, _mm256_in_range_ps(_length_squared_times_cross2, _MINUS_EPSILON, _EPSILON));
+
+	__m256 _not_same_angle = _mm256_not_ps(_same_angle);
+
+	collision_info._intersect = _mm256_not_ps(_same_angle);
+
+	collision_info._intersect = _mm256_or_ps(_not_same_angle, _intersect_and_coincide);
+	collision_info._coincide = _intersect_and_coincide;
+
+	__m256 _distance_to_intersection = _mm256_div_ps(_length_squared_times_cross2, _dot1_times_sum_of_tangents);
+	__m256 _ray_origin_to_intersection_x_without_mask = _mm256_mul_ps(_ray_direction_x, _distance_to_intersection);
+	__m256 _ray_origin_to_intersection_y_without_mask = _mm256_mul_ps(_ray_direction_y, _distance_to_intersection);
+
+	__m256 _inter_x_without_mask = _mm256_add_ps(_ray_origin_x, _ray_origin_to_intersection_x_without_mask);
+	__m256 _inter_y_without_mask = _mm256_add_ps(_ray_origin_y, _ray_origin_to_intersection_y_without_mask);
+
+	_inter_x = _mm256_and_ps(_inter_x_without_mask, _not_same_angle);
+	_inter_y = _mm256_and_ps(_inter_y_without_mask, _not_same_angle);
+
+	return collision_info;
 }
-
-inline __m256 _mm256_nor_ps(const __m256& _a, const __m256& _b)
-{
-	return _mm256_xor_ps(_mm256_and_ps(_a, _b), _mm256_cmp_ps(_a, _b, _CMP_EQ_OQ));
-}
-
-inline __m256 _mm256_not_ps(const __m256& _a)
-{
-	return _mm256_nor_ps(_a, _a);
-}
-
-inline __m256 _mm256_eq_zero_ps(const __m256& _a, const __m256& _minus_bound, const __m256& _bound)
-{
-	__m256 _gt_m_bound = _mm256_cmp_ps(_minus_bound, _a, _CMP_LT_OQ);
-	__m256 _lt_bound = _mm256_cmp_ps(_a, _bound, _CMP_LT_OQ);
-	return _mm256_and_ps(_gt_m_bound, _lt_bound);
-}
-
-
+#else
 CollisionInfoAVXRegisters _RayLineVsSegmentsLinesAVX(const Ray& ray, const std::vector<Segment>& segments, int index_first_surface, __m256& _inter_x, __m256& _inter_y)
 {
 	/*
@@ -95,8 +162,8 @@ CollisionInfoAVXRegisters _RayLineVsSegmentsLinesAVX(const Ray& ray, const std::
 	_b2 = _mm256_mul_ps(_b2, _minus_one);
 	_b2 = _mm256_add_ps(_b2, _l2p1y);
 
-	_l1horizontal = _mm256_eq_zero_ps(_a1, _MINUS_EPSILON, _EPSILON);
-	_l2horizontal = _mm256_eq_zero_ps(_a2, _MINUS_EPSILON, _EPSILON);
+	_l1horizontal = _mm256_in_range_ps(_a1, _MINUS_EPSILON, _EPSILON);
+	_l2horizontal = _mm256_in_range_ps(_a2, _MINUS_EPSILON, _EPSILON);
 
 	_a1eqmINF_mask = (_mm256_cmp_ps(_a1, _MINUS_INFINITY, _CMP_EQ_OQ));
 	_a1eqpINF_mask = (_mm256_cmp_ps(_a1, _INFINITY, _CMP_EQ_OQ));
@@ -137,7 +204,7 @@ CollisionInfoAVXRegisters _RayLineVsSegmentsLinesAVX(const Ray& ray, const std::
 
 	// hh
 	{
-		__m256 _intersect_and_coincide_mask = _mm256_eq_zero_ps(_mm256_sub_ps(_l1p1y, _l2p1y), _MINUS_EPSILON, _EPSILON);
+		__m256 _intersect_and_coincide_mask = _mm256_in_range_ps(_mm256_sub_ps(_l1p1y, _l2p1y), _MINUS_EPSILON, _EPSILON);
 		__m256 _intersect_and_coincide_i = _mm256_and_ps(_hh, _intersect_and_coincide_mask);
 		collision_info._intersect = _mm256_and_ps(collision_info._intersect, _mm256_not_ps(_hh));
 		collision_info._intersect = _mm256_or_ps(collision_info._intersect, _intersect_and_coincide_i);
@@ -154,7 +221,7 @@ CollisionInfoAVXRegisters _RayLineVsSegmentsLinesAVX(const Ray& ray, const std::
 	_inter_y = _mm256_or_ps(_inter_y, _mm256_and_ps(_vh, _l2p1y));
 	// vv
 	{
-		__m256 _intersect_and_coincide_mask = _mm256_eq_zero_ps(_mm256_sub_ps(_l1p1x, _l2p1x), _MINUS_EPSILON, _EPSILON);
+		__m256 _intersect_and_coincide_mask = _mm256_in_range_ps(_mm256_sub_ps(_l1p1x, _l2p1x), _MINUS_EPSILON, _EPSILON);
 		__m256 _intersect_and_coincide_i = _mm256_and_ps(_vv, _intersect_and_coincide_mask);
 		collision_info._intersect = _mm256_and_ps(collision_info._intersect, _mm256_not_ps(_vv));
 		collision_info._intersect = _mm256_or_ps(collision_info._intersect, _intersect_and_coincide_i);
@@ -171,8 +238,8 @@ CollisionInfoAVXRegisters _RayLineVsSegmentsLinesAVX(const Ray& ray, const std::
 	_inter_y = _mm256_or_ps(_inter_y, _mm256_and_ps(_av, _mm256_add_ps(_mm256_mul_ps(_l2p1x, _a1), _b1)));
 	// aa
 	{
-		__m256 _a1_eq_a2 = _mm256_eq_zero_ps(_mm256_sub_ps(_a1, _a2), _MINUS_EPSILON, _EPSILON);
-		__m256 _b1_eq_b2 = _mm256_eq_zero_ps(_mm256_sub_ps(_b1, _b2), _MINUS_EPSILON, _EPSILON);
+		__m256 _a1_eq_a2 = _mm256_in_range_ps(_mm256_sub_ps(_a1, _a2), _MINUS_EPSILON, _EPSILON);
+		__m256 _b1_eq_b2 = _mm256_in_range_ps(_mm256_sub_ps(_b1, _b2), _MINUS_EPSILON, _EPSILON);
 		__m256 _intersect_and_coincide_mask = _mm256_and_ps(_a1_eq_a2, _b1_eq_b2);
 		__m256 _intersect_and_coincide_i = _mm256_and_ps(_aa, _intersect_and_coincide_mask);
 		collision_info._intersect = _mm256_and_ps(collision_info._intersect, _mm256_not_ps(_aa));
@@ -257,3 +324,4 @@ CollisionInfoAVXRegisters _RayLineVsSegmentsLinesAVX(const Ray& ray, const std::
 	//
 	//return CollisionInfo(false, false);
 }
+#endif

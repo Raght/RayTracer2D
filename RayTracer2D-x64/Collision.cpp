@@ -228,6 +228,32 @@ CollisionInfo SurfaceVsSurface(const Surface& surface1, const Surface& surface2)
 	return SurfaceVsSurface(surface1, surface2, intersection_point);
 }
 
+#if OPTIMIZED_COLLISION_INTERSECTIONS
+CollisionInfo RayVsSegment(const Ray& ray, const Segment& segment, olc::vf2d& intersectionPoint)
+{
+	olc::vf2d ray_origin_to_p1 = segment.p1 - ray.origin;
+	olc::vf2d p1_to_ray_origin = ray.origin - segment.p1;
+	olc::vf2d p1_to_p2 = segment.p2 - segment.p1;
+	float length_squared = ray_origin_to_p1.mag2();
+	float cross1 = ray.direction.cross_abs(ray_origin_to_p1);
+	float dot1 = ray.direction.dot(ray_origin_to_p1);
+	float cross2 = p1_to_p2.cross_abs(p1_to_ray_origin);
+	float dot2 = p1_to_p2.dot(p1_to_ray_origin);
+	float length_squared_times_cross2 = length_squared * cross2;
+	float dot1_times_sum_of_tangents = cross1 * dot2 + cross2 * dot1;
+	if (Equal(dot1_times_sum_of_tangents, 0.0f))
+	{
+		bool intersect_and_coincide = Equal(length_squared_times_cross2, 0.0f);
+		return CollisionInfo(intersect_and_coincide, intersect_and_coincide);
+	}
+	else
+	{
+		float distance_to_intersection = length_squared_times_cross2 / dot1_times_sum_of_tangents;
+		intersectionPoint = ray.origin + ray.direction * distance_to_intersection;
+		return CollisionInfo(true, false);
+	}
+}
+#else
 CollisionInfo RayVsSegment(const Ray& ray, const Segment& segment, olc::vf2d& intersectionPoint)
 {
 	Segment ray_as_segment = Segment(ray.origin, ray.EndPoint());
@@ -253,6 +279,7 @@ CollisionInfo RayVsSegment(const Ray& ray, const Segment& segment, olc::vf2d& in
 
 	return CollisionInfo(false, false);
 }
+#endif
 
 CollisionInfo RayVsSurface(const Ray& ray, const Surface& surface, olc::vf2d& intersectionPoint)
 {
@@ -277,20 +304,23 @@ bool RayVsSegment(const Ray& ray, const Segment& segment)
 	float cross1 = ray.direction.cross(ray_origin_to_p1);
 	float cross2 = ray.direction.cross(ray_origin_to_p2);
 	bool line_intersects_segment = cross1 * cross2 <= 0.0f;
-	if (!line_intersects_segment)
-	{
-		return false;
-	}
-	else
-	{
-		float cross3 = ray_origin_to_p1.cross(ray_origin_to_p2);
-		if (cross3 >= 0.0f)
-			return cross1 <= 0.0f;
-		else
-			return cross1 >= 0.0f;
-		// This can be converted to
-		//return cross3 * cross1 <= 0.0f;
-	}
+	float cross3 = ray_origin_to_p1.cross(ray_origin_to_p2);
+	bool ray_points_towards_segment = cross3 * cross1 <= 0.0f; // && cross3 * cross2 >= 0.0f;
+	return line_intersects_segment && ray_points_towards_segment;
+	//if (!line_intersects_segment)
+	//{
+	//	return false;
+	//}
+	//else
+	//{
+	//	float cross3 = ray_origin_to_p1.cross(ray_origin_to_p2);
+	//	if (cross3 >= 0.0f)
+	//		return cross1 <= 0.0f;
+	//	else
+	//		return cross1 >= 0.0f;
+	//	// This can be converted to
+	//	//return cross3 * cross1 <= 0.0f;
+	//}
 }
 
 bool PointVsRect(olc::vf2d point, olc::vf2d rectangle_position, olc::vf2d rectangle_size)

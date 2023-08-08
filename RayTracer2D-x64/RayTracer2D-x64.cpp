@@ -10,7 +10,7 @@
 #include "Collision.h"
 #include "Physics.h"
 #include "Ray.h"
-#include "Line.h"
+#include "Segment.h"
 #include "Surface.h"
 #include "Range.h"
 #include "Constants.h"
@@ -34,25 +34,7 @@ namespace std
 }
 
 
-uint64_t float_as_uint64_t(float a)
-{
-	return *(uint64_t*)&a;
-}
 
-float uint64_t_as_float(uint64_t a)
-{
-	return *(float*)&a;
-}
-
-uint32_t float_as_uint32_t(float a)
-{
-	return *(uint32_t*)&a;
-}
-
-float uint32_t_as_float(uint32_t a)
-{
-	return *(float*)&a;
-}
 
 
 
@@ -176,7 +158,7 @@ private:
 	void AddSurface(const Surface& surface)
 	{
 		surfaces.push_back(surface);
-		segments.push_back(Segment(surface.p1, surface.p2));
+		segments.push_back(Segment(surface.p1, surface.p2).Extended(SURFACES_EXTENSION));
 	}
 
 	inline void RemoveSurface(int i)
@@ -197,9 +179,9 @@ private:
 	}
 
 
-	bool debug_mode = false;
+	bool debug_mode = true;
 	bool debug_show_ray_intersections = true;
-	bool debug_UI_write_ray_intersections_positions = false;
+	bool debug_UI_write_ray_intersections_positions = true;
 	int debug_show_ray_intersections_depth = 16;
 	bool debug_UI_write_surface_points_positions = false;
 	bool debug_UI_write_ray_intersections = false;
@@ -303,10 +285,10 @@ public:
 
 			if (surface_stress_test == SurfaceStressTest::CollisionHeavy)
 			{
-				offset_x = ScreenWidth() / 2 - 10;
+				offset_x = ScreenWidth() / 2 - 3;
 				rect_offset_x = 0;
 
-				for (float y = ScreenHeight() - offset_y; y > offset_y && surfaces_counter < max_surfaces; y -= 0.01f)
+				for (float y = ScreenHeight() - offset_y; y > offset_y && surfaces_counter < max_surfaces; y -= 0.005f)
 				{
 					float x_begin = offset_x;
 					float x_end = ScreenWidth() - offset_x;
@@ -522,7 +504,7 @@ public:
 				int surfaces_removed = 0;
 				for (int i = 0; i < surfaces_to_remove.size(); i++)
 				{
-					surfaces.erase(surfaces.begin() + surfaces_to_remove[i] - surfaces_removed);
+					RemoveSurface(surfaces_to_remove[i] - surfaces_removed);
 
 					surfaces_removed++;
 				}
@@ -597,7 +579,7 @@ public:
 
 		Ray first_ray = light_ray;
 		Ray second_ray = first_ray;
-		Surface nearest_surface = null_surface;
+		Segment segment_that_collided_with_ray;
 		hit_corner = false;
 
 		if (!is_constructing && !is_cutting)
@@ -618,9 +600,12 @@ public:
 					}
 				}
 
+				//std::cout << segments_collided.size() << ' ';
 
 				int segments_collided_left_to_check = segments_collided.size() % NUMBERS_PER_AVX_REGISTER;
+#if SINGLE_THREAD_NO_AVX
 				segments_collided_left_to_check = segments_collided.size();
+#endif
 #if MT_AVX
 				std::vector<olc::vf2d> intersections_per_segment;
 				intersections_per_segment.resize(segments_collided.size(), null_point);
@@ -636,7 +621,7 @@ public:
 						{
 							bool intersect = bool(collision_infos._intersect.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j]);
 							bool coincide = bool(collision_infos._coincide.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j]);
-							if (intersect && !coincide && nearest_surface != segments_collided[i + j])
+							if (intersect && !coincide && segment_that_collided_with_ray != segments_collided[i + j])
 							{
 								intersections_per_segment[i + j] = olc::vf2d(
 									_inter_x.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j],
@@ -675,7 +660,7 @@ public:
 					{
 						bool intersect = bool(collision_infos._intersect.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j]);
 						bool coincide = bool(collision_infos._coincide.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j]);
-						if (intersect && !coincide && nearest_surface != segments_collided[i + j])
+						if (intersect && !coincide && segment_that_collided_with_ray != segments_collided[i + j])
 						{
 							intersections.push_back(olc::vf2d(
 								_inter_x.m256_f32[NUMBERS_PER_AVX_REGISTER - 1 - j],
@@ -690,7 +675,7 @@ public:
 				{
 					olc::vf2d intersection_point;
 					CollisionInfo collision_info = RayVsSegment(first_ray, segments_collided[i], intersection_point);
-					if (collision_info.intersect && !collision_info.coincide && nearest_surface != segments_collided[i])
+					if (collision_info.intersect && !collision_info.coincide && segment_that_collided_with_ray != segments_collided[i])
 					{
 						intersections.push_back(intersection_point);
 						indexes.push_back(segments_indexes[i]);
@@ -739,7 +724,7 @@ public:
 					float distance_current = (intersections[i] - first_ray.origin).mag2();
 					return abs(distance_current - distance_closest) < EPSILON &&
 						i != closest_intersection_index &&
-						!surfaces[closest_surface_index].IsContinuationOfAnotherSurface(surfaces[indexes[i]]);
+						!surfaces[closest_surface_index].IsContinuationOfAnotherSegment(surfaces[indexes[i]]);
 					});
 
 				//for (int i = 0; i < intersections.size(); i++)
@@ -771,7 +756,8 @@ public:
 
 				
 				olc::vf2d intersection_point = closest_intersection;
-				nearest_surface = surfaces[closest_surface_index];
+				segment_that_collided_with_ray = segments[closest_surface_index];
+				Surface nearest_surface = surfaces[closest_surface_index];
 
 				DrawRay(first_ray, intersection_point);
 

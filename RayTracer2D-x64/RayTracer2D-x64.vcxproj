@@ -19,10 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AVXExtension.h" />
     <ClInclude Include="Collision.h" />
     <ClInclude Include="CollisionAVX.h" />
     <ClInclude Include="Constants.h" />
-    <ClInclude Include="Line.h" />
+    <ClInclude Include="Segment.h" />
     <ClInclude Include="Math.h" />
     <ClInclude Include="olcPixelGameEngine.h" />
     <ClInclude Include="Physics.h" />
@@ -32,9 +33,10 @@
     <ClInclude Include="Surface.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Bits.cpp" />
     <ClCompile Include="Collision.cpp" />
     <ClCompile Include="CollisionAVX.cpp" />
-    <ClCompile Include="Line.cpp" />
+    <ClCompile Include="Segment.cpp" />
     <ClCompile Include="Math.cpp" />
     <ClCompile Include="Physics.cpp" />
     <ClCompile Include="Range.cpp" />
@@ -42,6 +44,9 @@
     <ClCompile Include="Ray.cpp" />
     <ClCompile Include="RayTracer2D-x64.cpp" />
     <ClCompile Include="Surface.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Bits.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

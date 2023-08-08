@@ -18,7 +18,7 @@
     <ClInclude Include="Constants.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="Line.h">
+    <ClInclude Include="Segment.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="Math.h">
@@ -48,9 +48,12 @@
     <ClInclude Include="CollisionAVX.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="AVXExtension.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Line.cpp">
+    <ClCompile Include="Segment.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
     <ClCompile Include="Math.cpp">
@@ -80,5 +83,13 @@
     <ClCompile Include="CollisionAVX.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="Bits.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Bits.h">
+      <Filter>Файлы заголовков</Filter>
+    </None>
   </ItemGroup>
 </Project>

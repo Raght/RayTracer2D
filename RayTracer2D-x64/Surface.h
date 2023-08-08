@@ -1,6 +1,6 @@
 #pragma once
 #include "olcPixelGameEngine.h"
-#include "Line.h"
+#include "Segment.h"
 #include "Math.h"
 
 
@@ -14,15 +14,6 @@ struct Surface : Segment
 	Surface(olc::vf2d point1, olc::vf2d point2, SurfaceType surfaceType);
 	Surface(olc::vf2d point1, olc::vf2d point2, SurfaceType surfaceType, float refractiveIndex);
 
-
-	void Extend(float length);
-	Surface Extended(float length) const;
-
-	bool ContainsPoint(olc::vf2d point);
-
-	bool IsContinuationOfAnotherSurface(const Surface& another_surface) const;
-
-	float AngleCoefficient() const;
 
 	float refractive_index;
 	bool is_reflective;

@@ -2,7 +2,7 @@
 #include "olcPixelGameEngine.h"
 #include "Math.h"
 #include "Ray.h"
-#include "Line.h"
+#include "Segment.h"
 #include "Surface.h"
 #include "Constants.h"
 
