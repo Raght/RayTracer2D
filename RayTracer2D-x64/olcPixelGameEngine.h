@@ -736,36 +736,36 @@ namespace olc
 
 	public: // DRAWING ROUTINES
 		// Draws a single Pixel
-		virtual bool Draw(int32_t x, int32_t y, const Pixel& p = olc::WHITE);
-		bool Draw(const olc::vi2d& pos, const Pixel& p = olc::WHITE);
+		virtual bool Draw(int32_t x, int32_t y, Pixel p = olc::WHITE);
+		bool Draw(olc::vi2d pos, Pixel p = olc::WHITE);
 		// Draws a line from (x1,y1) to (x2,y2)
-		void DrawLine(int32_t x1, int32_t y1, int32_t x2, int32_t y2, const Pixel& p = olc::WHITE, uint32_t pattern = 0xFFFFFFFF);
-		void DrawLine(const olc::vi2d& pos1, const olc::vi2d& pos2, const Pixel& p = olc::WHITE, uint32_t pattern = 0xFFFFFFFF);
+		void DrawLine(int32_t x1, int32_t y1, int32_t x2, int32_t y2, Pixel p = olc::WHITE, uint32_t pattern = 0xFFFFFFFF);
+		void DrawLine(olc::vi2d pos1, olc::vi2d pos2, Pixel p = olc::WHITE, uint32_t pattern = 0xFFFFFFFF);
 		// Draws a circle located at (x,y) with radius
-		void DrawCircle(int32_t x, int32_t y, int32_t radius, const Pixel& p = olc::WHITE, uint8_t mask = 0xFF);
-		void DrawCircle(const olc::vi2d& pos, int32_t radius, const Pixel& p = olc::WHITE, uint8_t mask = 0xFF);
+		void DrawCircle(int32_t x, int32_t y, int32_t radius, Pixel p = olc::WHITE, uint8_t mask = 0xFF);
+		void DrawCircle(olc::vi2d pos, int32_t radius, Pixel p = olc::WHITE, uint8_t mask = 0xFF);
 		// Fills a circle located at (x,y) with radius
-		void FillCircle(int32_t x, int32_t y, int32_t radius, const Pixel& p = olc::WHITE);
-		void FillCircle(const olc::vi2d& pos, int32_t radius, const Pixel& p = olc::WHITE);
+		void FillCircle(int32_t x, int32_t y, int32_t radius, Pixel p = olc::WHITE);
+		void FillCircle(olc::vi2d pos, int32_t radius, Pixel p = olc::WHITE);
 		// Draws a rectangle at (x,y) to (x+w,y+h)
-		void DrawRect(int32_t x, int32_t y, int32_t w, int32_t h, const Pixel& p = olc::WHITE);
-		void DrawRect(const olc::vi2d& pos, const olc::vi2d& size, const Pixel& p = olc::WHITE);
+		void DrawRect(int32_t x, int32_t y, int32_t w, int32_t h, Pixel p = olc::WHITE);
+		void DrawRect(olc::vi2d pos, olc::vi2d size, Pixel p = olc::WHITE);
 		// Fills a rectangle at (x,y) to (x+w,y+h)
-		void FillRect(int32_t x, int32_t y, int32_t w, int32_t h, const Pixel& p = olc::WHITE);
-		void FillRect(const olc::vi2d& pos, const olc::vi2d& size, const Pixel& p = olc::WHITE);
+		void FillRect(int32_t x, int32_t y, int32_t w, int32_t h, Pixel p = olc::WHITE);
+		void FillRect(olc::vi2d pos, olc::vi2d size, Pixel p = olc::WHITE);
 		// Draws a triangle between points (x1,y1), (x2,y2) and (x3,y3)
-		void DrawTriangle(int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t x3, int32_t y3, const Pixel& p = olc::WHITE);
-		void DrawTriangle(const olc::vi2d& pos1, const olc::vi2d& pos2, const olc::vi2d& pos3, const Pixel& p = olc::WHITE);
+		void DrawTriangle(int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t x3, int32_t y3, Pixel p = olc::WHITE);
+		void DrawTriangle(olc::vi2d pos1, olc::vi2d pos2, olc::vi2d pos3, Pixel p = olc::WHITE);
 		// Flat fills a triangle between points (x1,y1), (x2,y2) and (x3,y3)
-		void FillTriangle(int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t x3, int32_t y3, const Pixel& p = olc::WHITE);
-		void FillTriangle(const olc::vi2d& pos1, const olc::vi2d& pos2, const olc::vi2d& pos3, const Pixel& p = olc::WHITE);
+		void FillTriangle(int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t x3, int32_t y3, Pixel p = olc::WHITE);
+		void FillTriangle(olc::vi2d pos1, olc::vi2d pos2, olc::vi2d pos3, Pixel p = olc::WHITE);
 		// Draws an entire sprite at well in my defencelocation (x,y)
 		void DrawSprite(int32_t x, int32_t y, Sprite* sprite, uint32_t scale = 1, uint8_t flip = olc::Sprite::NONE);
-		void DrawSprite(const olc::vi2d& pos, Sprite* sprite, uint32_t scale = 1, uint8_t flip = olc::Sprite::NONE);
+		void DrawSprite(olc::vi2d pos, Sprite* sprite, uint32_t scale = 1, uint8_t flip = olc::Sprite::NONE);
 		// Draws an area of a sprite at location (x,y), where the
 		// selected area is (ox,oy) to (ox+w,oy+h)
 		void DrawPartialSprite(int32_t x, int32_t y, Sprite* sprite, int32_t ox, int32_t oy, int32_t w, int32_t h, uint32_t scale = 1, uint8_t flip = olc::Sprite::NONE);
-		void DrawPartialSprite(const olc::vi2d& pos, Sprite* sprite, const olc::vi2d& sourcepos, const olc::vi2d& size, uint32_t scale = 1, uint8_t flip = olc::Sprite::NONE);
+		void DrawPartialSprite(olc::vi2d pos, Sprite* sprite, olc::vi2d sourcepos, olc::vi2d size, uint32_t scale = 1, uint8_t flip = olc::Sprite::NONE);
 
 		// Decal Quad functions
 
@@ -1619,13 +1619,13 @@ namespace olc
 
 
 
-	bool PixelGameEngine::Draw(const olc::vi2d& pos, const Pixel& p)
+	bool PixelGameEngine::Draw(olc::vi2d pos, Pixel p)
 	{
 		return Draw(pos.x, pos.y, p);
 	}
 
 	// This is it, the critical function that plots a pixel
-	bool PixelGameEngine::Draw(int32_t x, int32_t y, const Pixel& p)
+	bool PixelGameEngine::Draw(int32_t x, int32_t y, Pixel p)
 	{
 		if (!pDrawTarget) return false;
 
@@ -1665,12 +1665,12 @@ namespace olc
 		//vSubPixelOffset.y = oy * vPixel.y;
 	}
 
-	void PixelGameEngine::DrawLine(const olc::vi2d& pos1, const olc::vi2d& pos2, const Pixel& p, uint32_t pattern)
+	void PixelGameEngine::DrawLine(olc::vi2d pos1, olc::vi2d pos2, Pixel p, uint32_t pattern)
 	{
 		DrawLine(pos1.x, pos1.y, pos2.x, pos2.y, p, pattern);
 	}
 
-	void PixelGameEngine::DrawLine(int32_t x1, int32_t y1, int32_t x2, int32_t y2, const Pixel& p, uint32_t pattern)
+	void PixelGameEngine::DrawLine(int32_t x1, int32_t y1, int32_t x2, int32_t y2, Pixel p, uint32_t pattern)
 	{
 		int x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
 		dx = x2 - x1; dy = y2 - y1;
@@ -1786,12 +1786,12 @@ namespace olc
 		}
 	}
 
-	void PixelGameEngine::DrawCircle(const olc::vi2d& pos, int32_t radius, const Pixel& p, uint8_t mask)
+	void PixelGameEngine::DrawCircle(olc::vi2d pos, int32_t radius, Pixel p, uint8_t mask)
 	{
 		DrawCircle(pos.x, pos.y, radius, p, mask);
 	}
 
-	void PixelGameEngine::DrawCircle(int32_t x, int32_t y, int32_t radius, const Pixel& p, uint8_t mask)
+	void PixelGameEngine::DrawCircle(int32_t x, int32_t y, int32_t radius, Pixel p, uint8_t mask)
 	{ // Thanks to IanM-Matrix1 #PR121
 		if (radius < 0 || x < -radius || y < -radius || x - GetDrawTargetWidth() > radius || y - GetDrawTargetHeight() > radius)
 			return;
@@ -1827,12 +1827,12 @@ namespace olc
 			Draw(x, y, p);
 	}
 
-	void PixelGameEngine::FillCircle(const olc::vi2d& pos, int32_t radius, const Pixel& p)
+	void PixelGameEngine::FillCircle(olc::vi2d pos, int32_t radius, Pixel p)
 	{
 		FillCircle(pos.x, pos.y, radius, p);
 	}
 
-	void PixelGameEngine::FillCircle(int32_t x, int32_t y, int32_t radius, const Pixel& p)
+	void PixelGameEngine::FillCircle(int32_t x, int32_t y, int32_t radius, Pixel p)
 	{ // Thanks to IanM-Matrix1 #PR121
 		if (radius < 0 || x < -radius || y < -radius || x - GetDrawTargetWidth() > radius || y - GetDrawTargetHeight() > radius)
 			return;
@@ -1871,12 +1871,12 @@ namespace olc
 			Draw(x, y, p);
 	}
 
-	void PixelGameEngine::DrawRect(const olc::vi2d& pos, const olc::vi2d& size, const Pixel& p)
+	void PixelGameEngine::DrawRect(olc::vi2d pos, olc::vi2d size, Pixel p)
 	{
 		DrawRect(pos.x, pos.y, size.x, size.y, p);
 	}
 
-	void PixelGameEngine::DrawRect(int32_t x, int32_t y, int32_t w, int32_t h, const Pixel& p)
+	void PixelGameEngine::DrawRect(int32_t x, int32_t y, int32_t w, int32_t h, Pixel p)
 	{
 		DrawLine(x, y, x + w, y, p);
 		DrawLine(x + w, y, x + w, y + h, p);
@@ -1896,12 +1896,12 @@ namespace olc
 		renderer->ClearBuffer(p, bDepth);
 	}
 
-	void PixelGameEngine::FillRect(const olc::vi2d& pos, const olc::vi2d& size, const Pixel& p)
+	void PixelGameEngine::FillRect(olc::vi2d pos, olc::vi2d size, Pixel p)
 	{
 		FillRect(pos.x, pos.y, size.x, size.y, p);
 	}
 
-	void PixelGameEngine::FillRect(int32_t x, int32_t y, int32_t w, int32_t h, const Pixel& p)
+	void PixelGameEngine::FillRect(int32_t x, int32_t y, int32_t w, int32_t h, Pixel p)
 	{
 		int32_t x2 = x + w;
 		int32_t y2 = y + h;
@@ -1921,25 +1921,25 @@ namespace olc
 				Draw(i, j, p);
 	}
 
-	void PixelGameEngine::DrawTriangle(const olc::vi2d& pos1, const olc::vi2d& pos2, const olc::vi2d& pos3, const Pixel& p)
+	void PixelGameEngine::DrawTriangle(olc::vi2d pos1, olc::vi2d pos2, olc::vi2d pos3, Pixel p)
 	{
 		DrawTriangle(pos1.x, pos1.y, pos2.x, pos2.y, pos3.x, pos3.y, p);
 	}
 
-	void PixelGameEngine::DrawTriangle(int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t x3, int32_t y3, const Pixel& p)
+	void PixelGameEngine::DrawTriangle(int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t x3, int32_t y3, Pixel p)
 	{
 		DrawLine(x1, y1, x2, y2, p);
 		DrawLine(x2, y2, x3, y3, p);
 		DrawLine(x3, y3, x1, y1, p);
 	}
 
-	void PixelGameEngine::FillTriangle(const olc::vi2d& pos1, const olc::vi2d& pos2, const olc::vi2d& pos3, const Pixel& p)
+	void PixelGameEngine::FillTriangle(olc::vi2d pos1, olc::vi2d pos2, olc::vi2d pos3, Pixel p)
 	{
 		FillTriangle(pos1.x, pos1.y, pos2.x, pos2.y, pos3.x, pos3.y, p);
 	}
 
 	// https://www.avrfreaks.net/sites/default/files/triangles.c
-	void PixelGameEngine::FillTriangle(int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t x3, int32_t y3, const Pixel& p)
+	void PixelGameEngine::FillTriangle(int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t x3, int32_t y3, Pixel p)
 	{
 		auto drawline = [&](int sx, int ex, int ny) { for (int i = sx; i <= ex; i++) Draw(i, ny, p); };
 
@@ -2075,7 +2075,7 @@ namespace olc
 		}
 	}
 
-	void PixelGameEngine::DrawSprite(const olc::vi2d& pos, Sprite* sprite, uint32_t scale, uint8_t flip)
+	void PixelGameEngine::DrawSprite(olc::vi2d pos, Sprite* sprite, uint32_t scale, uint8_t flip)
 	{
 		DrawSprite(pos.x, pos.y, sprite, scale, flip);
 	}
@@ -2114,7 +2114,7 @@ namespace olc
 		}
 	}
 
-	void PixelGameEngine::DrawPartialSprite(const olc::vi2d& pos, Sprite* sprite, const olc::vi2d& sourcepos, const olc::vi2d& size, uint32_t scale, uint8_t flip)
+	void PixelGameEngine::DrawPartialSprite(olc::vi2d pos, Sprite* sprite, olc::vi2d sourcepos, olc::vi2d size, uint32_t scale, uint8_t flip)
 	{
 		DrawPartialSprite(pos.x, pos.y, sprite, sourcepos.x, sourcepos.y, size.x, size.y, scale, flip);
 	}
