@@ -180,9 +180,9 @@ private:
 
 	bool enable_surface_stress_test = true;
 	enum class SurfaceStressTest {
-		CollisionHeavy, CollisionSparse, CollsionHeavyAndDrawing
+		CollisionHeavy, CollisionSparse, CollisionHeavyAndDrawing
 	};
-	SurfaceStressTest surface_stress_test = SurfaceStressTest::CollsionHeavyAndDrawing;
+	SurfaceStressTest surface_stress_test = SurfaceStressTest::CollisionHeavyAndDrawing;
 
 	
 	Ray light_ray;
@@ -293,7 +293,7 @@ public:
 					}
 				}
 			}
-			else if (surface_stress_test == SurfaceStressTest::CollsionHeavyAndDrawing)
+			else if (surface_stress_test == SurfaceStressTest::CollisionHeavyAndDrawing)
 			{
 				for (int y1 = ScreenHeight() - offset_y; y1 > offset_y && surfaces_counter < max_surfaces; y1--)
 				{
