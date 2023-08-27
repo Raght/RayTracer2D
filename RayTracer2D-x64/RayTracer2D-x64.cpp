@@ -17,8 +17,6 @@
 #include "CollisionAVX.h"
 
 
-using namespace std;
-
 
 namespace std
 {
@@ -80,11 +78,11 @@ private:
 	{
 		if (surface.is_reflective)
 		{
-			DrawLineDecal(ToScreenSpace(surface.p1), ToScreenSpace(surface.p2), reflective_surface_color);
+			DrawLine(ToScreenSpace(surface.p1), ToScreenSpace(surface.p2), reflective_surface_color);
 		}
 		else if (surface.is_refractive)
 		{
-			DrawLineDecal(ToScreenSpace(surface.p1), ToScreenSpace(surface.p2), refractive_surface_color);
+			DrawLine(ToScreenSpace(surface.p1), ToScreenSpace(surface.p2), refractive_surface_color);
 		}
 	}
 
@@ -106,24 +104,24 @@ private:
 		DrawLine(ToScreenSpace(ray.origin), ToScreenSpace(endPoint), ray.Color());
 	}
 
-	void DrawStringUpLeftCorner(const olc::vi2d& position, const string& text, const olc::Pixel& color)
+	void DrawStringUpLeftCorner(const olc::vi2d& position, const std::string& text, const olc::Pixel& color)
 	{
 		DrawString(position, text, color, UI_scale);
 	}
 
-	void DrawStringUpRightCorner(const olc::vi2d& position, const string& text, const olc::Pixel& color)
+	void DrawStringUpRightCorner(const olc::vi2d& position, const std::string& text, const olc::Pixel& color)
 	{
 		olc::vi2d pos = { int32_t(position.x - 8 * UI_scale * text.size()), int32_t(position.y) };
 		DrawString(pos, text, color, UI_scale);
 	}
 
-	void DrawStringBottomRightCorner(const olc::vi2d& position, const string& text, const olc::Pixel& color)
+	void DrawStringBottomRightCorner(const olc::vi2d& position, const std::string& text, const olc::Pixel& color)
 	{
 		olc::vi2d pos = { int32_t(position.x - 8 * UI_scale * text.size()), int32_t(position.y - 8 * UI_scale) };
 		DrawString(pos, text, color, UI_scale);
 	}
 
-	void DrawStringBottomLeftCorner(const olc::vi2d& position, const string& text, const olc::Pixel& color)
+	void DrawStringBottomLeftCorner(const olc::vi2d& position, const std::string& text, const olc::Pixel& color)
 	{
 		olc::vi2d pos = { position.x, int32_t(position.y - 8 * UI_scale) };
 		DrawString(pos, text, color, UI_scale);
@@ -166,15 +164,19 @@ private:
 	}
 
 
+	int UI_scale;
+	int UI_character_size;
+	float view_scale = 1;
+
 	bool debug_mode = false;
 	bool debug_show_ray_intersections = true;
 	bool debug_UI_write_ray_intersections_positions = true;
 	int debug_show_ray_intersections_depth = 16;
-	bool debug_UI_write_surface_points_positions = false;
-	bool debug_UI_write_ray_intersections = false;
+	bool debug_UI_write_surface_points_positions = true;
+	bool debug_UI_write_ray_intersections = true;
 	olc::vi2d debug_UI_intersections_screen_position;
 
-	vector<olc::vf2d> debug_rays_intersections;
+	std::vector<olc::vf2d> debug_rays_intersections;
 
 	bool enable_surface_stress_test = true;
 	enum class SurfaceStressTest {
@@ -184,8 +186,8 @@ private:
 
 	
 	Ray light_ray;
-	vector<Surface> surfaces;
-	vector<Segment> segments;
+	std::vector<Surface> surfaces;
+	std::vector<Segment> segments;
 	bool hit_corner = false;
 	olc::vf2d corner_position;
 	int index_ray_simulated;
@@ -196,7 +198,7 @@ private:
 	bool first_point_constructed = false;
 	bool is_constructing = false;
 	float refractive_index = 1.5f;
-	float nearest_point_snap_radius = 8;
+	int nearest_point_snap_radius_pixels = 8;
 	olc::vf2d nearest_point;
 	olc::vf2d point_to_construct;
 	//unordered_map<olc::vf2d, Surface&>
@@ -206,19 +208,17 @@ private:
 	bool is_cutting = false;
 	bool is_cutting_during_construction = false;
 	bool cutting_surface_first_point_set = false;
-	vector<int> surfaces_to_remove;
+	std::vector<int> surfaces_to_remove;
 
 
 	int rays_per_second = 50;
 	float ms_per_ray_increase = 1.0f / rays_per_second;
 	float timer = 0.0f;
 
-	float refractive_index_step = 0.1f;
+	float refractive_index_step = 0.05f;
 
 
-	int UI_scale;
-	int UI_character_size;
-	float view_scale = 1;
+	
 
 	bool full_brightness = false;
 	bool draw_normals = true;
@@ -245,13 +245,12 @@ private:
 public:
 	bool OnUserCreate() override
 	{
+		float light_ray_length = sqrt(float(ScreenWidth() * ScreenWidth() + ScreenHeight() * ScreenHeight())) + 1;
+		light_ray_length /= view_scale;
 		light_ray = Ray({ float(ScreenWidth() / 2 / view_scale), float(ScreenHeight() / 2 / view_scale) },
-			{ 1, 0 },
-			sqrt(float(ScreenWidth() * ScreenWidth() + ScreenHeight() * ScreenHeight())) + 1,
-			ray_color,
-			1);
+			{ 1, 0 }, light_ray_length, ray_color, 1);
 
-		UI_scale = max(int((float)ScreenWidth() / 640), 1);
+		UI_scale = std::max(int((float)ScreenWidth() / 640), 1);
 		UI_character_size = 8 * UI_scale;
 
 		if (debug_mode)
@@ -390,18 +389,18 @@ public:
 		bool nearest_point_found = false;
 		if (is_constructing && !is_cutting_during_construction)
 		{
-			vector<olc::vf2d> nearest_points;
+			std::vector<olc::vf2d> nearest_points;
 			for (Surface& surface : surfaces)
 			{
-				if ((surface.p1 - GetWorldMousePosition()).mag2() < nearest_point_snap_radius * nearest_point_snap_radius)
+				if ((surface.p1 - GetWorldMousePosition()).mag2() < nearest_point_snap_radius_pixels * nearest_point_snap_radius_pixels / view_scale / view_scale)
 					nearest_points.push_back(surface.p1);
-				else if ((surface.p2 - GetWorldMousePosition()).mag2() < nearest_point_snap_radius * nearest_point_snap_radius)
+				else if ((surface.p2 - GetWorldMousePosition()).mag2() < nearest_point_snap_radius_pixels * nearest_point_snap_radius_pixels / view_scale / view_scale)
 					nearest_points.push_back(surface.p2);
 			}
 
 			if (nearest_points.size() > 0)
 			{
-				sort(nearest_points.begin(), nearest_points.end(), 
+				std::sort(nearest_points.begin(), nearest_points.end(),
 					[world_mouse_position = GetWorldMousePosition()](olc::vf2d& p1, olc::vf2d& p2)
 					{
 						return (p1 - world_mouse_position).mag2() < (p2 - world_mouse_position).mag2();
@@ -573,8 +572,8 @@ public:
 		{
 			for (index_ray_simulated = 0; index_ray_simulated < rays_simulated; index_ray_simulated++)
 			{
-				vector<Segment> segments_collided;
-				vector<int> segments_indexes;
+				std::vector<Segment> segments_collided;
+				std::vector<int> segments_indexes;
 				segments_collided.reserve(segments.size());
 				segments_indexes.reserve(segments.size());
 				
@@ -618,8 +617,8 @@ public:
 						}
 					});
 
-				vector<olc::vf2d> intersections;
-				vector<int> indexes;
+				std::vector<olc::vf2d> intersections;
+				std::vector<int> indexes;
 				intersections.reserve(segments_collided.size());
 				indexes.reserve(segments_collided.size());
 
@@ -633,8 +632,8 @@ public:
 					}
 				}
 #else
-				vector<olc::vf2d> intersections;
-				vector<int> indexes;
+				std::vector<olc::vf2d> intersections;
+				std::vector<int> indexes;
 				intersections.reserve(segments_collided.size());
 				indexes.reserve(segments_collided.size());
 
@@ -709,24 +708,11 @@ public:
 				Range intersections_range(0, intersections.size());
 				hit_corner = std::any_of(std::execution::seq, intersections_range.begin(), intersections_range.end(), [&](int i) {
 					float distance_current = (intersections[i] - first_ray.origin).mag2();
-					return abs(distance_current - distance_closest) < EPSILON &&
+					return abs(distance_current - distance_closest) < 100 * EPSILON * EPSILON &&
 						i != closest_intersection_index &&
 						!surfaces[closest_surface_index].IsContinuationOfAnotherSegment(surfaces[indexes[i]]);
 					});
 
-				//for (int i = 0; i < intersections.size(); i++)
-				//{
-				//	float distance_current = (intersections[i] - first_ray.origin).mag2();
-				//
-				//	if (abs(distance_current - distance_closest) < EPSILON &&
-				//		i != closest_intersection_index &&
-				//		!surfaces[closest_surface_index].IsContinuationOfAnotherSurface(surfaces[indexes[i]]))
-				//	{
-				//		hit_corner = true;
-				//
-				//		break;
-				//	}
-				//}
 
 				if (hit_corner)
 				{
@@ -771,13 +757,11 @@ public:
 					if (index_ray_simulated == 0)
 						debug_UI_intersections_screen_position = olc::vi2d(0, 8 * UI_scale);
 
-					DrawStringUpLeftCorner(debug_UI_intersections_screen_position, "i = " + to_string(index_ray_simulated), UI_text_color);
+					DrawStringUpLeftCorner(debug_UI_intersections_screen_position, "RAY #" + std::to_string(index_ray_simulated), UI_text_color);
 					debug_UI_intersections_screen_position.y += UI_character_size;
 					for (int j = 0; j < intersections.size(); j++)
 					{
-						string x = to_string(intersections[j].x);
-						string y = to_string(intersections[j].y);
-						DrawStringUpLeftCorner(debug_UI_intersections_screen_position, '#' + to_string(j) + ' ' + x + ' ' + y, UI_text_color);
+						DrawStringUpLeftCorner(debug_UI_intersections_screen_position, '#' + std::to_string(j) + ": " + intersections[j].str(), UI_text_color);
 
 						debug_UI_intersections_screen_position.y += UI_character_size;
 					}
@@ -790,8 +774,9 @@ public:
 			DrawSurface(surface);
 			if (debug_mode && debug_UI_write_surface_points_positions)
 			{
-				DrawStringUpLeftCorner(ToScreenSpace(surface.p1), "(" + to_string(surface.p1.x) + "; " + to_string(surface.p1.y) + ")", UI_text_color);
-				DrawStringUpLeftCorner(ToScreenSpace(surface.p2), "(" + to_string(surface.p2.x) + "; " + to_string(surface.p2.y) + ")", UI_text_color);
+				
+				DrawStringUpLeftCorner(ToScreenSpace(surface.p1), surface.p1.str(), UI_text_color);
+				DrawStringUpLeftCorner(ToScreenSpace(surface.p2), surface.p2.str(), UI_text_color);
 			}
 		}
 
@@ -806,9 +791,7 @@ public:
 
 				if (debug_UI_write_ray_intersections_positions)
 				{
-					string x = to_string(intersection.x);
-					string y = to_string(intersection.y);
-					DrawStringBottomLeftCorner(ToScreenSpace(intersection), x + ' ' + y, olc::CYAN);
+					DrawStringBottomLeftCorner(ToScreenSpace(intersection), intersection.str(), olc::CYAN);
 				}
 			}
 
@@ -818,16 +801,16 @@ public:
 		if (nearest_point_found)
 		{
 			FillCircle(ToScreenSpace(point_to_construct), point_radius, nearest_point_snap_point_color);
-			DrawCircle(ToScreenSpace(point_to_construct), nearest_point_snap_radius, nearest_point_snap_circle_color);
+			DrawCircle(ToScreenSpace(point_to_construct), nearest_point_snap_radius_pixels, nearest_point_snap_circle_color);
 		}
 
 		if (is_cutting && cutting_surface_first_point_set)
 		{
 			for (int i : surfaces_to_remove)
 			{
-				DrawLineDecal(ToScreenSpace(surfaces[i].p1), ToScreenSpace(surfaces[i].p2), surface_to_be_removed_color);
+				DrawLine(ToScreenSpace(surfaces[i].p1), ToScreenSpace(surfaces[i].p2), surface_to_be_removed_color);
 			}
-			DrawLineDecal(ToScreenSpace(cutting_surface.p1), ToScreenSpace(cutting_surface.p2), cutting_surface_color);
+			DrawLine(ToScreenSpace(cutting_surface.p1), ToScreenSpace(cutting_surface.p2), cutting_surface_color);
 		}
 
 		FillCircle(ToScreenSpace(light_ray.origin), inner_circle_origin_radius * UI_scale, ray_origin_color);
@@ -838,8 +821,8 @@ public:
 
 		// Draw surfaces count
 		DrawStringUpLeftCorner(olc::vi2d{ 0, 0 },
-			"SURFACES COUNT: " + to_string(surfaces.size()) + " | " + 
-			"MAX RAYS : " + to_string(rays_simulated) + "/" + to_string(index_ray_simulated),
+			"SURFACES COUNT: " + std::to_string(surfaces.size()) + " | " + 
+			"MAX RAYS : " + std::to_string(rays_simulated) + "/" + std::to_string(index_ray_simulated),
 			UI_text_color);
 
 		if (is_cutting)
@@ -862,7 +845,7 @@ public:
 			else if (surface_type == SurfaceType::REFRACTIVE)
 			{
 				DrawStringUpRightCorner(olc::vi2d{ ScreenWidth(), 0 }, "REFRACTIVE (S)URFACE", refractive_surface_color);
-				DrawStringUpRightCorner(olc::vi2d{ ScreenWidth(), UI_character_size }, to_string(refractive_index), refractive_surface_color);
+				DrawStringUpRightCorner(olc::vi2d{ ScreenWidth(), UI_character_size }, std::to_string(refractive_index), refractive_surface_color);
 			}
 		}
 		else
@@ -890,9 +873,9 @@ void PrintBitRepresentation(float num)
 	for (int64_t i = 63; i >= 0; i--)
 	{
 		int bit = ((num_as_int & (1ull << (uint64_t)i)) >> (uint64_t)i);
-		cout << bit;
+		std::cout << bit;
 	}
-	cout << '\n';
+	std::cout << '\n';
 }
 
 float ConvertBitIntegerTofloat(uint64_t num)
@@ -919,7 +902,7 @@ int main()
 {
 	olc::GraphicsMode graphics_mode;
 
-	vector<olc::GraphicsMode> graphics_modes;
+	std::vector<olc::GraphicsMode> graphics_modes;
 
 	int screen_width, screen_height;
 	GetDesktopResolution(screen_width, screen_height);
@@ -932,49 +915,49 @@ int main()
 	graphics_modes.push_back({ 1280, 720, 1, 1 });
 	graphics_modes.push_back({ 640,  360, 2, 2 });
 
-	cout << "|----------------------------------|\n";
-	cout << "| Mode | Resolution   | Pixel size |\n";
-	cout << "|----------  FULL SCREEN  ---------|\n";
-	cout << "| 1    | FULLSCREEN   | 1x1        |\n";
-	cout << "| 2    | FULLSCREEN/2 | 2x2        |\n";
-	cout << "|------------  FULL HD  -----------|\n";
-	cout << "| 3    | 1600x900     | 1x1        |\n";
-	cout << "| 4    | 854x480      | 2x2        |\n";
-	cout << "| 5    | 532x300      | 3x3        |\n";
-	cout << "|--------------  HD  --------------|\n";
-	cout << "| 6    | 1280x720     | 1x1        |\n";
-	cout << "| 7    | 640x360      | 2x2        |\n";
-	cout << "| 8    | Custom       | Custom     |\n";
-	cout << "|----------------------------------|\n";
-	cout << '\n';
+	std::cout << "|----------------------------------|\n";
+	std::cout << "| Mode | Resolution   | Pixel size |\n";
+	std::cout << "|----------  FULL SCREEN  ---------|\n";
+	std::cout << "| 1    | FULLSCREEN   | 1x1        |\n";
+	std::cout << "| 2    | FULLSCREEN/2 | 2x2        |\n";
+	std::cout << "|------------  FULL HD  -----------|\n";
+	std::cout << "| 3    | 1600x900     | 1x1        |\n";
+	std::cout << "| 4    | 854x480      | 2x2        |\n";
+	std::cout << "| 5    | 532x300      | 3x3        |\n";
+	std::cout << "|--------------  HD  --------------|\n";
+	std::cout << "| 6    | 1280x720     | 1x1        |\n";
+	std::cout << "| 7    | 640x360      | 2x2        |\n";
+	std::cout << "| 8    | Custom       | Custom     |\n";
+	std::cout << "|----------------------------------|\n";
+	std::cout << '\n';
 
 	while (true)
 	{
 		int mode = 4;
-		cout << "Choose mode: ";
-		cin >> mode;
+		std::cout << "Choose mode: ";
+		std::cin >> mode;
 
 		if (mode < 0 || mode > graphics_modes.size() + 1)
 		{
-			cout << "The mode you've chosen is incorrect or doesn't exist\n\n";
+			std::cout << "The mode you've chosen is incorrect or doesn't exist\n\n";
 			continue;
 		}
 		else if (mode == graphics_modes.size() + 1)
 		{
-			cout << "Resolution width: ";
-			cin >> graphics_mode.resolution_width;
-			cout << "Resolution height: ";
-			cin >> graphics_mode.resolution_height;
+			std::cout << "Resolution width: ";
+			std::cin >> graphics_mode.resolution_width;
+			std::cout << "Resolution height: ";
+			std::cin >> graphics_mode.resolution_height;
 			int pixel_size;
-			cout << "Pixel size: ";
-			cin >> pixel_size;
+			std::cout << "Pixel size: ";
+			std::cin >> pixel_size;
 			graphics_mode.pixel_width = pixel_size;
 			graphics_mode.pixel_height = pixel_size;
 
 			if (graphics_mode.resolution_width * graphics_mode.pixel_width > screen_width ||
 				graphics_mode.resolution_height * graphics_mode.pixel_height > screen_height)
 			{
-				cout << "Could not construct a window with such resolution\n\n";
+				std::cout << "Could not construct a window with such resolution\n\n";
 				continue;
 			}
 		}
@@ -983,15 +966,14 @@ int main()
 			graphics_mode = graphics_modes[mode - 1];
 		}
 
-		break;
-	}
+		if (graphics_mode.resolution_width * graphics_mode.pixel_width > screen_width ||
+			graphics_mode.resolution_height * graphics_mode.pixel_height > screen_height)
+		{
+			std::cout << "Could not construct a window with such resolution\n\n";
+			continue;
+		}
 
-	if (graphics_mode.resolution_width * graphics_mode.pixel_width > screen_width ||
-		graphics_mode.resolution_height * graphics_mode.pixel_height > screen_height)
-	{
-		cout << "Could not construct a window with such resolution\n\n";
-		cin.get();
-		return 1;
+		break;
 	}
 
 	Engine2D Engine;

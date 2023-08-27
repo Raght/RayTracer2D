@@ -722,7 +722,7 @@ namespace olc
 		v2d_generic  operator -  () const { return { -x, -y }; }
 		bool operator == (const v2d_generic& rhs) const { return (this->x == rhs.x && this->y == rhs.y); }
 		bool operator != (const v2d_generic& rhs) const { return (this->x != rhs.x || this->y != rhs.y); }
-		const std::string str() const { return std::string("(") + std::to_string(this->x) + "," + std::to_string(this->y) + ")"; }
+		const std::string str() const { return std::string("(") + std::to_string(this->x) + "; " + std::to_string(this->y) + ")"; }
 		friend std::ostream& operator << (std::ostream& os, const v2d_generic& rhs) { os << rhs.str(); return os; }
 		operator v2d_generic<int32_t>() const { return { static_cast<int32_t>(this->x), static_cast<int32_t>(this->y) }; }
 		operator v2d_generic<float>() const { return { static_cast<float>(this->x), static_cast<float>(this->y) }; }
@@ -2208,7 +2208,11 @@ namespace olc
 		int x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
 		dx = x2 - x1; dy = y2 - y1;
 
-		auto rol = [&](void) { pattern = (pattern << 1) | (pattern >> 31); return pattern & 1; };
+		uint32_t pixels_counter = 0;
+		uint32_t max_pixels = 2 * std::max(ScreenWidth(), ScreenHeight());
+		auto WARNING_MESSAGE_TOO_MANY_PIXELS_LAMBDA = [&](void) { return "WARNING: The line is too long and clips out of the screen (dx = " + std::to_string(dx) + ", dy = " + std::to_string(dy) + ")"; };
+
+		auto rol = [&](void) { pattern = (pattern << 1) | (pattern >> 31); pixels_counter++; return pattern & 1; };
 
 		olc::vi2d p1(x1, y1), p2(x2, y2);
 		//if (!ClipLineToScreen(p1, p2))
@@ -2220,14 +2224,18 @@ namespace olc
 		if (dx == 0) // Line is vertical
 		{
 			if (y2 < y1) std::swap(y1, y2);
-			for (y = y1; y <= y2; y++) if (rol()) Draw(x1, y, p);
+			for (y = y1; y <= y2 && pixels_counter <= max_pixels; y++) if (rol()) Draw(x1, y, p);
+			if (pixels_counter > max_pixels)
+				std::cout << WARNING_MESSAGE_TOO_MANY_PIXELS_LAMBDA() << '\n';
 			return;
 		}
 
 		if (dy == 0) // Line is horizontal
 		{
 			if (x2 < x1) std::swap(x1, x2);
-			for (x = x1; x <= x2; x++) if (rol()) Draw(x, y1, p);
+			for (x = x1; x <= x2 && pixels_counter <= max_pixels; x++) if (rol()) Draw(x, y1, p);
+			if (pixels_counter > max_pixels)
+				std::cout << WARNING_MESSAGE_TOO_MANY_PIXELS_LAMBDA() << '\n';
 			return;
 		}
 
@@ -2247,7 +2255,7 @@ namespace olc
 
 			if (rol()) Draw(x, y, p);
 
-			for (i = 0; x < xe; i++)
+			for (i = 0; x < xe && pixels_counter <= max_pixels; i++)
 			{
 				x = x + 1;
 				if (px < 0)
@@ -2273,7 +2281,7 @@ namespace olc
 
 			if (rol()) Draw(x, y, p);
 
-			for (i = 0; y < ye; i++)
+			for (i = 0; y < ye && pixels_counter <= max_pixels; i++)
 			{
 				y = y + 1;
 				if (py <= 0)
@@ -2286,6 +2294,9 @@ namespace olc
 				if (rol()) Draw(x, y, p);
 			}
 		}
+
+		if (pixels_counter > max_pixels)
+			std::cout << WARNING_MESSAGE_TOO_MANY_PIXELS_LAMBDA() << '\n';
 	}
 
 	void PixelGameEngine::DrawCircle(const olc::vi2d& pos, int32_t radius, Pixel p, uint8_t mask)

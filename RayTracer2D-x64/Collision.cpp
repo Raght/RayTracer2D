@@ -241,7 +241,7 @@ CollisionInfo RayVsSegment(const Ray& ray, const Segment& segment, olc::vf2d& in
 	float dot2 = p1_to_p2.dot(p1_to_ray_origin);
 	float length_squared_times_cross2 = length_squared * cross2;
 	float dot1_times_sum_of_tangents = cross1 * dot2 + cross2 * dot1;
-	if (Equal(dot1_times_sum_of_tangents, 0.0f))
+	if (dot1_times_sum_of_tangents == 0.0f)
 	{
 		bool intersect_and_coincide = Equal(length_squared_times_cross2, 0.0f);
 		return CollisionInfo(intersect_and_coincide, intersect_and_coincide);
