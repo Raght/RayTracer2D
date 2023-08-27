@@ -35,19 +35,6 @@ namespace std
 
 
 
-
-
-
-struct Shape
-{
-	vector<olc::vf2d> points;
-
-	void Draw(olc::PixelGameEngine* pge, olc::Pixel color)
-	{
-
-	}
-};
-
 olc::vf2d null_point = olc::vf2d(~0, ~0);
 Surface null_surface = Surface(olc::vf2d(~0, ~0), olc::vf2d(~0, ~0));
 
@@ -93,11 +80,11 @@ private:
 	{
 		if (surface.is_reflective)
 		{
-			DrawLine(ToScreenSpace(surface.p1), ToScreenSpace(surface.p2), reflective_surface_color);
+			DrawLineDecal(ToScreenSpace(surface.p1), ToScreenSpace(surface.p2), reflective_surface_color);
 		}
 		else if (surface.is_refractive)
 		{
-			DrawLine(ToScreenSpace(surface.p1), ToScreenSpace(surface.p2), refractive_surface_color);
+			DrawLineDecal(ToScreenSpace(surface.p1), ToScreenSpace(surface.p2), refractive_surface_color);
 		}
 	}
 
@@ -193,7 +180,7 @@ private:
 	enum class SurfaceStressTest {
 		CollisionHeavy, CollisionSparse, CollsionHeavyAndDrawing
 	};
-	SurfaceStressTest surface_stress_test = SurfaceStressTest::CollisionHeavy;
+	SurfaceStressTest surface_stress_test = SurfaceStressTest::CollisionSparse;
 
 	
 	Ray light_ray;
@@ -838,9 +825,9 @@ public:
 		{
 			for (int i : surfaces_to_remove)
 			{
-				DrawLine(ToScreenSpace(surfaces[i].p1), ToScreenSpace(surfaces[i].p2), surface_to_be_removed_color);
+				DrawLineDecal(ToScreenSpace(surfaces[i].p1), ToScreenSpace(surfaces[i].p2), surface_to_be_removed_color);
 			}
-			DrawLine(ToScreenSpace(cutting_surface.p1), ToScreenSpace(cutting_surface.p2), cutting_surface_color);
+			DrawLineDecal(ToScreenSpace(cutting_surface.p1), ToScreenSpace(cutting_surface.p2), cutting_surface_color);
 		}
 
 		FillCircle(ToScreenSpace(light_ray.origin), inner_circle_origin_radius * UI_scale, ray_origin_color);

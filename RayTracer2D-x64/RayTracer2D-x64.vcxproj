@@ -23,9 +23,10 @@
     <ClInclude Include="Collision.h" />
     <ClInclude Include="CollisionAVX.h" />
     <ClInclude Include="Constants.h" />
+    <ClInclude Include="olcPixelGameEngine.h" />
     <ClInclude Include="Segment.h" />
     <ClInclude Include="Math.h" />
-    <ClInclude Include="olcPixelGameEngine.h" />
+    <ClInclude Include="olcPixelGameEngineOLD.h" />
     <ClInclude Include="Physics.h" />
     <ClInclude Include="Range.h" />
     <ClInclude Include="RangeIterator.h" />
